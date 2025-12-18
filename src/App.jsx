@@ -5,7 +5,6 @@ import Layout from "./components/layout/Layout";
 
 import Home from "./pages/Home.jsx";
 import Shop from "./pages/Shop.jsx";
-import ItemDetailPage from "./pages/ItemDetailPage.jsx";
 import CartPage from "./pages/CartPage.jsx";
 import InventoryPage from "./pages/InventoryPage.jsx";
 import NotFound from "./pages/NotFound.jsx";
