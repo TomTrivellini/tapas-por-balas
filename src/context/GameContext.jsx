@@ -25,7 +25,7 @@ export function GameProvider({ children }) {
     return m;
   }, [catalog]);
 
-  const contCarrito = useMemo(() => sumTotal(cart), [cart]);
+  const CartCount = useMemo(() => sumTotal(cart), [cart]);
 
   const cartTotal = useMemo(() => {
     return cart.reduce((acc, row) => {
@@ -153,7 +153,7 @@ export function GameProvider({ children }) {
   const value = {
     caps,
     cart,
-    contCarrito,
+    CartCount,
     cartTotal,
     inventario,
     inventoryRecruits,

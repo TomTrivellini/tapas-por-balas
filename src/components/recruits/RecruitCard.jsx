@@ -1,5 +1,5 @@
 import { useGame } from "../../context/GameContext";
-import EquipModal from "./EquipModal";
+import RecruitInventory from "./RecruitInventory";
 
 export default function RecruitCard({ recruit, index }) {
   const { byId, unequipWeapon, addAmmo, removeAmmo, unequipHelmet, unequipVest, unequipConsumable, team, addToTeam, removeFromTeam } = useGame();
@@ -25,22 +25,22 @@ export default function RecruitCard({ recruit, index }) {
             <div>Munición: {recruit.ammo} <button onClick={() => removeAmmo(index, 1)} disabled={recruit.ammo === 0}>-</button> <button onClick={() => addAmmo(index, `amm-${recruit.weapon}`, 1)}>+</button></div>
           </>
         )}
-        {!weapon && <EquipModal recruitIndex={index} type="weapon" />}
+        {!weapon && <RecruitInventory recruitIndex={index} type="weapon" />}
       </div>
       <div>
         <strong>Casco:</strong> {helmet ? helmet.name : "Ninguno"}
         {helmet && <button onClick={() => unequipHelmet(index)}>Quitar</button>}
-        {!helmet && <EquipModal recruitIndex={index} type="helmet" />}
+        {!helmet && <RecruitInventory recruitIndex={index} type="helmet" />}
       </div>
       <div>
         <strong>Chaleco:</strong> {vest ? vest.name : "Ninguno"}
         {vest && <button onClick={() => unequipVest(index)}>Quitar</button>}
-        {!vest && <EquipModal recruitIndex={index} type="vest" />}
+        {!vest && <RecruitInventory recruitIndex={index} type="vest" />}
       </div>
       <div>
         <strong>Consumible:</strong> {consumable ? consumable.name : "Ninguno"}
         {consumable && <button onClick={() => unequipConsumable(index)}>Quitar</button>}
-        {!consumable && <EquipModal recruitIndex={index} type="consumable" />}
+        {!consumable && <RecruitInventory recruitIndex={index} type="consumable" />}
       </div>
     </div>
   );

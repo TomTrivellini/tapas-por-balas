@@ -1,6 +1,6 @@
 import Logo from './Logo.jsx';
 import NavLinks from './NavLinks.jsx';
-import StatusIndicators from './StatusIndicators.jsx';
+import TapasCount from './TapasCount.jsx';
 
 export default function NavBar() {
   return (
@@ -8,7 +8,7 @@ export default function NavBar() {
       <div className="nav__inner">
         <Logo />
         <NavLinks />
-        <StatusIndicators />
+        <TapasCount />
       </div>
     </header>
   );

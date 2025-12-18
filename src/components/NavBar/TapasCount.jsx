@@ -1,6 +1,6 @@
 import { useGame } from '../../context/GameContext.jsx';
 
-export default function StatusIndicators() {
+export default function TapasCount() {
   const { caps } = useGame();
 
   return (

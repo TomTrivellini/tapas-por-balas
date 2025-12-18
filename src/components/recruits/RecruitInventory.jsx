@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useGame } from "../../context/GameContext";
 
-export default function EquipModal({ recruitIndex, type }) {
+export default function RecruitInventory({ recruitIndex, type }) {
   const { inventario, inventoryRecruits, byId, equipWeapon, equipHelmet, equipVest, equipConsumable, addAmmo } = useGame();
 
   const getTypeName = (type) => {

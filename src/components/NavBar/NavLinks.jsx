@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useGame } from '../../context/GameContext.jsx';
 
 export default function NavLinks() {
-  const { contCarrito, cart, byId, removeFromCart, cartTotal } = useGame();
+  const { CartCount, cart, byId, removeFromCart, cartTotal } = useGame();
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   return (
@@ -19,7 +19,7 @@ export default function NavLinks() {
           className="nav__cart-button"
           onClick={() => setIsCartOpen(!isCartOpen)}
         >
-          Carrito <span className="badge">{contCarrito}</span>
+          Carrito <span className="badge">{CartCount}</span>
         </button>
         {isCartOpen && (
           <div className="cart-dropdown">
