@@ -14,117 +14,117 @@ function upsertQty(list, id, delta) {
   return next;
 }
 
-export function equipWeapon(recruits, inventario, recruitIndex, weaponId, byId) {
-  const weapon = byId.get(weaponId);
-  if (!weapon || weapon.type !== "weapon") return { recruits, inventario };
+export function equiparArma(reclutas, inventario, indiceRecluta, idArma, porId) {
+  const arma = porId.get(idArma);
+  if (!arma || arma.type !== "arma") return { reclutas, inventario };
 
-  let newInventario = upsertQty(inventario, weaponId, -1);
-  const newRecruits = [...recruits];
-  if (newRecruits[recruitIndex].weapon) {
-    newInventario = upsertQty(newInventario, newRecruits[recruitIndex].weapon, 1);
+  let nuevoInventario = upsertQty(inventario, idArma, -1);
+  const nuevosReclutas = [...reclutas];
+  if (nuevosReclutas[indiceRecluta].weapon) {
+    nuevoInventario = upsertQty(nuevoInventario, nuevosReclutas[indiceRecluta].weapon, 1);
   }
-  newRecruits[recruitIndex] = { ...newRecruits[recruitIndex], weapon: weaponId, ammo: 0 };
-  return { recruits: newRecruits, inventario: newInventario };
+  nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], weapon: idArma, ammo: 0 };
+  return { reclutas: nuevosReclutas, inventario: nuevoInventario };
 }
 
-export function unequipWeapon(recruits, inventario, recruitIndex) {
-  const newRecruits = [...recruits];
-  if (newRecruits[recruitIndex].weapon) {
-    const newInventario = upsertQty(inventario, newRecruits[recruitIndex].weapon, 1);
-    newRecruits[recruitIndex] = { ...newRecruits[recruitIndex], weapon: null, ammo: 0 };
-    return { recruits: newRecruits, inventario: newInventario };
+export function desequiparArma(reclutas, inventario, indiceRecluta) {
+  const nuevosReclutas = [...reclutas];
+  if (nuevosReclutas[indiceRecluta].weapon) {
+    const nuevoInventario = upsertQty(inventario, nuevosReclutas[indiceRecluta].weapon, 1);
+    nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], weapon: null, ammo: 0 };
+    return { reclutas: nuevosReclutas, inventario: nuevoInventario };
   }
-  return { recruits, inventario };
+  return { reclutas, inventario };
 }
 
-export function addAmmo(recruits, inventario, recruitIndex, ammoId, qty, byId) {
-  const ammo = byId.get(ammoId);
-  if (!ammo || ammo.type !== "ammo") return { recruits, inventario };
-  const recruit = recruits[recruitIndex];
-  if (!recruit.weapon || ammo.ammoFor !== recruit.weapon) return { recruits, inventario };
+export function agregarMunicion(reclutas, inventario, indiceRecluta, idMunicion, cantidad, porId) {
+  const municion = porId.get(idMunicion);
+  if (!municion || municion.type !== "ammo") return { reclutas, inventario };
+  const recluta = reclutas[indiceRecluta];
+  if (!recluta.weapon || municion.ammoFor !== recluta.weapon) return { reclutas, inventario };
 
-  const newInventario = upsertQty(inventario, ammoId, -qty);
-  const newRecruits = [...recruits];
-  newRecruits[recruitIndex] = { ...recruit, ammo: recruit.ammo + qty };
-  return { recruits: newRecruits, inventario: newInventario };
+  const nuevoInventario = upsertQty(inventario, idMunicion, -cantidad);
+  const nuevosReclutas = [...reclutas];
+  nuevosReclutas[indiceRecluta] = { ...recluta, ammo: recluta.ammo + cantidad };
+  return { reclutas: nuevosReclutas, inventario: nuevoInventario };
 }
 
-export function removeAmmo(recruits, inventario, recruitIndex, qty) {
-  const recruit = recruits[recruitIndex];
-  if (recruit.ammo <= 0) return { recruits, inventario };
+export function removerMunicion(reclutas, inventario, indiceRecluta, cantidad) {
+  const recluta = reclutas[indiceRecluta];
+  if (recluta.ammo <= 0) return { reclutas, inventario };
 
-  const ammoId = `amm-${recruit.weapon}`;
-  const newInventario = upsertQty(inventario, ammoId, qty);
-  const newRecruits = [...recruits];
-  newRecruits[recruitIndex] = { ...recruit, ammo: Math.max(0, recruit.ammo - qty) };
-  return { recruits: newRecruits, inventario: newInventario };
+  const idMunicion = `amm-${recluta.weapon}`;
+  const nuevoInventario = upsertQty(inventario, idMunicion, cantidad);
+  const nuevosReclutas = [...reclutas];
+  nuevosReclutas[indiceRecluta] = { ...recluta, ammo: Math.max(0, recluta.ammo - cantidad) };
+  return { reclutas: nuevosReclutas, inventario: nuevoInventario };
 }
 
-export function equipHelmet(recruits, inventario, recruitIndex, helmetId, byId) {
-  const helmet = byId.get(helmetId);
-  if (!helmet || helmet.id !== "mask") return { recruits, inventario };
+export function equiparCasco(reclutas, inventario, indiceRecluta, idCasco, porId) {
+  const casco = porId.get(idCasco);
+  if (!casco || casco.id !== "mask") return { reclutas, inventario };
 
-  let newInventario = upsertQty(inventario, helmetId, -1);
-  const newRecruits = [...recruits];
-  if (newRecruits[recruitIndex].helmet) {
-    newInventario = upsertQty(newInventario, newRecruits[recruitIndex].helmet, 1);
+  let nuevoInventario = upsertQty(inventario, idCasco, -1);
+  const nuevosReclutas = [...reclutas];
+  if (nuevosReclutas[indiceRecluta].helmet) {
+    nuevoInventario = upsertQty(nuevoInventario, nuevosReclutas[indiceRecluta].helmet, 1);
   }
-  newRecruits[recruitIndex] = { ...newRecruits[recruitIndex], helmet: helmetId };
-  return { recruits: newRecruits, inventario: newInventario };
+  nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], helmet: idCasco };
+  return { reclutas: nuevosReclutas, inventario: nuevoInventario };
 }
 
-export function unequipHelmet(recruits, inventario, recruitIndex) {
-  const newRecruits = [...recruits];
-  if (newRecruits[recruitIndex].helmet) {
-    const newInventario = upsertQty(inventario, newRecruits[recruitIndex].helmet, 1);
-    newRecruits[recruitIndex] = { ...newRecruits[recruitIndex], helmet: null };
-    return { recruits: newRecruits, inventario: newInventario };
+export function desequiparCasco(reclutas, inventario, indiceRecluta) {
+  const nuevosReclutas = [...reclutas];
+  if (nuevosReclutas[indiceRecluta].helmet) {
+    const nuevoInventario = upsertQty(inventario, nuevosReclutas[indiceRecluta].helmet, 1);
+    nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], helmet: null };
+    return { reclutas: nuevosReclutas, inventario: nuevoInventario };
   }
-  return { recruits, inventario };
+  return { reclutas, inventario };
 }
 
-export function equipVest(recruits, inventario, recruitIndex, vestId, byId) {
-  const vest = byId.get(vestId);
-  if (!vest || vest.id !== "vest") return { recruits, inventario };
+export function equiparChaleco(reclutas, inventario, indiceRecluta, idChaleco, porId) {
+  const chaleco = porId.get(idChaleco);
+  if (!chaleco || chaleco.id !== "vest") return { reclutas, inventario };
 
-  let newInventario = upsertQty(inventario, vestId, -1);
-  const newRecruits = [...recruits];
-  if (newRecruits[recruitIndex].vest) {
-    newInventario = upsertQty(newInventario, newRecruits[recruitIndex].vest, 1);
+  let nuevoInventario = upsertQty(inventario, idChaleco, -1);
+  const nuevosReclutas = [...reclutas];
+  if (nuevosReclutas[indiceRecluta].vest) {
+    nuevoInventario = upsertQty(nuevoInventario, nuevosReclutas[indiceRecluta].vest, 1);
   }
-  newRecruits[recruitIndex] = { ...newRecruits[recruitIndex], vest: vestId };
-  return { recruits: newRecruits, inventario: newInventario };
+  nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], vest: idChaleco };
+  return { reclutas: nuevosReclutas, inventario: nuevoInventario };
 }
 
-export function unequipVest(recruits, inventario, recruitIndex) {
-  const newRecruits = [...recruits];
-  if (newRecruits[recruitIndex].vest) {
-    const newInventario = upsertQty(inventario, newRecruits[recruitIndex].vest, 1);
-    newRecruits[recruitIndex] = { ...newRecruits[recruitIndex], vest: null };
-    return { recruits: newRecruits, inventario: newInventario };
+export function desequiparChaleco(reclutas, inventario, indiceRecluta) {
+  const nuevosReclutas = [...reclutas];
+  if (nuevosReclutas[indiceRecluta].vest) {
+    const nuevoInventario = upsertQty(inventario, nuevosReclutas[indiceRecluta].vest, 1);
+    nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], vest: null };
+    return { reclutas: nuevosReclutas, inventario: nuevoInventario };
   }
-  return { recruits, inventario };
+  return { reclutas, inventario };
 }
 
-export function equipConsumable(recruits, inventario, recruitIndex, consumableId, byId) {
-  const consumable = byId.get(consumableId);
-  if (!consumable || consumable.type !== "consumable") return { recruits, inventario };
+export function equiparConsumible(reclutas, inventario, indiceRecluta, idConsumible, porId) {
+  const consumible = porId.get(idConsumible);
+  if (!consumible || consumible.type !== "consumable") return { reclutas, inventario };
 
-  let newInventario = upsertQty(inventario, consumableId, -1);
-  const newRecruits = [...recruits];
-  if (newRecruits[recruitIndex].consumable) {
-    newInventario = upsertQty(newInventario, newRecruits[recruitIndex].consumable, 1);
+  let nuevoInventario = upsertQty(inventario, idConsumible, -1);
+  const nuevosReclutas = [...reclutas];
+  if (nuevosReclutas[indiceRecluta].consumable) {
+    nuevoInventario = upsertQty(nuevoInventario, nuevosReclutas[indiceRecluta].consumable, 1);
   }
-  newRecruits[recruitIndex] = { ...newRecruits[recruitIndex], consumable: consumableId };
-  return { recruits: newRecruits, inventario: newInventario };
+  nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], consumable: idConsumible };
+  return { reclutas: nuevosReclutas, inventario: nuevoInventario };
 }
 
-export function unequipConsumable(recruits, inventario, recruitIndex) {
-  const newRecruits = [...recruits];
-  if (newRecruits[recruitIndex].consumable) {
-    const newInventario = upsertQty(inventario, newRecruits[recruitIndex].consumable, 1);
-    newRecruits[recruitIndex] = { ...newRecruits[recruitIndex], consumable: null };
-    return { recruits: newRecruits, inventario: newInventario };
+export function desequiparConsumible(reclutas, inventario, indiceRecluta) {
+  const nuevosReclutas = [...reclutas];
+  if (nuevosReclutas[indiceRecluta].consumable) {
+    const nuevoInventario = upsertQty(inventario, nuevosReclutas[indiceRecluta].consumable, 1);
+    nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], consumable: null };
+    return { reclutas: nuevosReclutas, inventario: nuevoInventario };
   }
-  return { recruits, inventario };
+  return { reclutas, inventario };
 }

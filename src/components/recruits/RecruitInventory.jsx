@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useGame } from "../../context/GameContext";
+import { useInventory } from "../../context/InventoryContext";
 
 export default function RecruitInventory({ recruitIndex, type }) {
-  const { inventario, inventoryRecruits, byId, equipWeapon, equipHelmet, equipVest, equipConsumable, addAmmo } = useGame();
+  const { inventario, reclutasInventario, porId, equiparArma, equiparCasco, equiparChaleco, equiparConsumible, agregarMunicion } = useInventory();
 
   const getTypeName = (type) => {
     switch (type) {
@@ -19,19 +19,20 @@ export default function RecruitInventory({ recruitIndex, type }) {
   const getAvailableItems = () => {
     switch (type) {
       case "arma":
-        return inventario.filter(item => byId.get(item.id)?.type === "arma");
+        return inventario.filter(item => porId.get(item.id)?.type === "arma");
       case "casco":
         return inventario.filter(item => item.id === "mask");
       case "chaleco":
         return inventario.filter(item => item.id === "vest");
       case "consumible":
-        return inventario.filter(item => byId.get(item.id)?.type === "consumible");
-      case "munición":
+        return inventario.filter(item => porId.get(item.id)?.type === "consumable");
+      case "munición": {
         // Para munición, filtrar por el arma equipada
-        const recruit = inventoryRecruits[recruitIndex];
+        const recruit = reclutasInventario[recruitIndex];
         if (!recruit.weapon) return [];
         const ammoId = `amm-${recruit.weapon}`;
         return inventario.filter(item => item.id === ammoId);
+      }
       default:
         return [];
     }
@@ -40,19 +41,19 @@ export default function RecruitInventory({ recruitIndex, type }) {
   const handleEquip = (itemId) => {
     switch (type) {
       case "arma":
-        equipWeapon(recruitIndex, itemId);
+        equiparArma(recruitIndex, itemId);
         break;
       case "casco":
-        equipHelmet(recruitIndex, itemId);
+        equiparCasco(recruitIndex, itemId);
         break;
       case "chaleco":
-        equipVest(recruitIndex, itemId);
+        equiparChaleco(recruitIndex, itemId);
         break;
       case "consumible":
-        equipConsumable(recruitIndex, itemId);
+        equiparConsumible(recruitIndex, itemId);
         break;
       case "munición":
-        addAmmo(recruitIndex, itemId, 1);
+        agregarMunicion(recruitIndex, itemId, 1);
         break;
     }
     setIsOpen(false);
@@ -72,7 +73,7 @@ export default function RecruitInventory({ recruitIndex, type }) {
             ) : (
               <ul>
                 {availableItems.map(item => {
-                  const entry = byId.get(item.id);
+                  const entry = porId.get(item.id);
                   return (
                     <li key={item.id}>
                       {entry.name} (restan: {item.qty})

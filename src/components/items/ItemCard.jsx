@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGame } from "../../context/GameContext";
+import { useCart } from "../../context/CartContext";
 import ItemCount from "./ItemCount";
 
 function formatSub(entry) {
@@ -12,11 +12,11 @@ function formatSub(entry) {
 }
 
 export default function ItemCard({ entry }) {
-  const { addTapas } = useGame();
+  const { agregarAlCarrito } = useCart();
   const [msg, setMsg] = useState("");
 
   function onAdd(qty) {
-    addTapas(entry.id, qty);
+    agregarAlCarrito(entry.id, qty);
     setMsg(`Agregado: ${qty} x ${entry.name}`);
   }
 

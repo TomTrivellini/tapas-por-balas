@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useGame } from "../../context/GameContext";
+import { useCart } from "../../context/CartContext";
 import ItemCount from "./ItemCount";
 
 function detailLine(entry) {
@@ -12,20 +12,19 @@ function detailLine(entry) {
 }
 
 export default function ItemDetail({ entry }) {
-  const { addTapas, recruitNow } = useGame();
+  const { agregarAlCarrito } = useCart();
   const [msg, setMsg] = useState("");
 
   const info = useMemo(() => detailLine(entry), [entry]);
 
   function onAdd(qty) {
-    addTapas(entry.id, qty);
+    agregarAlCarrito(entry.id, qty);
     setMsg(`Agregado al carrito: ${qty} x ${entry.name}`);
   }
 
   function onRecruit() {
-    const r = recruitNow(entry.id);
-    if (r.ok) setMsg(`Reclutaste a ${entry.name}`);
-    else setMsg("No tenés suficientes tapas para reclutar.");
+    agregarAlCarrito(entry.id, 1);
+    setMsg(`Reclutaste a ${entry.name}`);
   }
 
   return (

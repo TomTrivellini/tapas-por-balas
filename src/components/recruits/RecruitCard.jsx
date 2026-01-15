@@ -1,46 +1,48 @@
-import { useGame } from "../../context/GameContext";
+import { useInventory } from "../../context/InventoryContext";
+import { useTeam } from "../../context/TeamContext";
 import RecruitInventory from "./RecruitInventory";
 
 export default function RecruitCard({ recruit, index }) {
-  const { byId, unequipWeapon, addAmmo, removeAmmo, unequipHelmet, unequipVest, unequipConsumable, team, addToTeam, removeFromTeam } = useGame();
+  const { porId, desequiparArma, agregarMunicion, removerMunicion, desequiparCasco, desequiparChaleco, desequiparConsumible, inventario } = useInventory();
+  const { equipo, agregarAlEquipo, removerDelEquipo } = useTeam();
 
-  const weapon = recruit.weapon ? byId.get(recruit.weapon) : null;
-  const helmet = recruit.helmet ? byId.get(recruit.helmet) : null;
-  const vest = recruit.vest ? byId.get(recruit.vest) : null;
-  const consumable = recruit.consumable ? byId.get(recruit.consumable) : null;
+  const weapon = recruit.weapon ? porId.get(recruit.weapon) : null;
+  const helmet = recruit.helmet ? porId.get(recruit.helmet) : null;
+  const vest = recruit.vest ? porId.get(recruit.vest) : null;
+  const consumable = recruit.consumable ? porId.get(recruit.consumable) : null;
 
   return (
     <div style={{ border: "1px solid #ccc", padding: "1rem", borderRadius: "4px" }}>
       <h3>{recruit.name}</h3>
-      {team.includes(index) ? (
-        <button onClick={() => removeFromTeam(index)}>Quitar del Equipo</button>
+      {equipo.includes(index) ? (
+        <button onClick={() => removerDelEquipo(index)}>Quitar del Equipo</button>
       ) : (
-        <button onClick={() => addToTeam(index)} disabled={team.length >= 3}>Agregar al Equipo</button>
+        <button onClick={() => agregarAlEquipo(index)} disabled={equipo.length >= 3}>Agregar al Equipo</button>
       )}
       <div>
         <strong>Arma:</strong> {weapon ? weapon.name : "Ninguna"}
         {weapon && (
           <>
-            <button onClick={() => unequipWeapon(index)}>Quitar</button>
-            <div>Munición: {recruit.ammo} <button onClick={() => removeAmmo(index, 1)} disabled={recruit.ammo === 0}>-</button> <button onClick={() => addAmmo(index, `amm-${recruit.weapon}`, 1)}>+</button></div>
+            <button onClick={() => desequiparArma(index)}>Quitar</button>
+            <div>Munición: {recruit.ammo} <button onClick={() => removerMunicion(index, 1)} disabled={recruit.ammo === 0}>-</button> <button onClick={() => agregarMunicion(index, `amm-${recruit.weapon}`, 1)} disabled={(inventario.find(item => item.id === `amm-${recruit.weapon}`)?.qty || 0) === 0}>+</button></div>
           </>
         )}
-        {!weapon && <RecruitInventory recruitIndex={index} type="weapon" />}
+        {!weapon && <RecruitInventory recruitIndex={index} type="arma" />}
       </div>
       <div>
         <strong>Casco:</strong> {helmet ? helmet.name : "Ninguno"}
-        {helmet && <button onClick={() => unequipHelmet(index)}>Quitar</button>}
-        {!helmet && <RecruitInventory recruitIndex={index} type="helmet" />}
+        {helmet && <button onClick={() => desequiparCasco(index)}>Quitar</button>}
+        {!helmet && <RecruitInventory recruitIndex={index} type="casco" />}
       </div>
       <div>
         <strong>Chaleco:</strong> {vest ? vest.name : "Ninguno"}
-        {vest && <button onClick={() => unequipVest(index)}>Quitar</button>}
-        {!vest && <RecruitInventory recruitIndex={index} type="vest" />}
+        {vest && <button onClick={() => desequiparChaleco(index)}>Quitar</button>}
+        {!vest && <RecruitInventory recruitIndex={index} type="chaleco" />}
       </div>
       <div>
         <strong>Consumible:</strong> {consumable ? consumable.name : "Ninguno"}
-        {consumable && <button onClick={() => unequipConsumable(index)}>Quitar</button>}
-        {!consumable && <RecruitInventory recruitIndex={index} type="consumable" />}
+        {consumable && <button onClick={() => desequiparConsumible(index)}>Quitar</button>}
+        {!consumable && <RecruitInventory recruitIndex={index} type="consumible" />}
       </div>
     </div>
   );

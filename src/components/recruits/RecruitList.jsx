@@ -1,17 +1,17 @@
-import { useGame } from "../../context/GameContext";
+import { useInventory } from "../../context/InventoryContext";
 import RecruitCard from "./RecruitCard";
 
 export default function RecruitList() {
-  const { inventoryRecruits } = useGame();
+  const { reclutasInventario } = useInventory();
 
   return (
     <div>
       <h2>Reclutas</h2>
-      {inventoryRecruits.length === 0 ? (
+      {reclutasInventario.length === 0 ? (
         <p>No hay reclutas.</p>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
-          {inventoryRecruits.map((recruit, index) => (
+          {reclutasInventario.map((recruit, index) => (
             <RecruitCard key={index} recruit={recruit} index={index} />
           ))}
         </div>

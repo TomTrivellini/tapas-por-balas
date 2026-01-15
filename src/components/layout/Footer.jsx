@@ -1,7 +1,7 @@
-import { useGame } from "../../context/GameContext";
+import { useCart } from "../../context/CartContext";
 
 export default function Footer() {
-  const { addCaps, reset } = useGame();
+  const { agregarTapas, reiniciarCarrito } = useCart();
 
   return (
     <footer className="footer">
@@ -12,10 +12,10 @@ export default function Footer() {
         </div>
 
         <div className="footer__actions">
-          <button className="btn" onClick={() => addCaps(25)}>
+          <button className="btn" onClick={() => agregarTapas(25)}>
             +25 tapas
           </button>
-          <button className="btn btn--danger" onClick={reset}>
+          <button className="btn btn--danger" onClick={reiniciarCarrito}>
             Reiniciar
           </button>
         </div>

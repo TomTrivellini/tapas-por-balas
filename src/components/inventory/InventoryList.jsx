@@ -1,7 +1,7 @@
-import { useGame } from "../../context/GameContext";
+import { useInventory } from "../../context/InventoryContext";
 
 export default function InventoryList() {
-  const { inventario, byId } = useGame();
+  const { inventario, porId } = useInventory();
 
   return (
     <div className="inv">
@@ -12,7 +12,7 @@ export default function InventoryList() {
         ) : (
           <ul className="list">
             {inventario.map((row) => {
-              const entry = byId.get(row.id);
+              const entry = porId.get(row.id);
               if (!entry) return null;
               return (
                 <li key={row.id} className="list__item">

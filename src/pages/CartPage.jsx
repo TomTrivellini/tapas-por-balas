@@ -1,11 +1,11 @@
-import { useGame } from "../context/GameContext.jsx";
+import { useCart } from "../context/CartContext.jsx";
 import CartList from "../components/cart/CartList";
 
 export default function CartPage() {
-  const { cart, cartTotal, caps, checkout } = useGame();
+  const { carrito, totalCarrito, tapas, realizarCompra } = useCart();
 
   function onCheckout() {
-    const r = checkout();
+    const r = realizarCompra();
     if (r.ok) alert("Compra realizada. Se agregó todo al inventario.");
     else if (r.reason === "no-caps") alert("No te alcanzan las tapas.");
     else alert("El carrito está vacío.");
@@ -20,14 +20,14 @@ export default function CartPage() {
       <div className="cart__summary">
         <div className="cart__row">
           <span className="muted">Tapas disponibles</span>
-          <b>{caps}</b>
+          <b>{tapas}</b>
         </div>
         <div className="cart__row">
           <span className="muted">Total</span>
-          <b>${cartTotal}</b>
+          <b>${totalCarrito}</b>
         </div>
 
-        <button className="btn btn--primary btn--big" onClick={onCheckout} disabled={cart.length === 0}>
+        <button className="btn btn--primary btn--big" onClick={onCheckout} disabled={carrito.length === 0}>
           Comprar
         </button>
       </div>

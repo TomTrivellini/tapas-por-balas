@@ -14,52 +14,52 @@ function upsertQty(list, id, delta) {
   return next;
 }
 
-export function addToCart(cart, id, qty = 1) {
-  return upsertQty(cart, id, qty);
+export function agregarAlCarrito(carrito, id, qty = 1) {
+  return upsertQty(carrito, id, qty);
 }
 
-export function incCart(cart, id) {
-  return addToCart(cart, id, 1);
+export function incrementarCarrito(carrito, id) {
+  return agregarAlCarrito(carrito, id, 1);
 }
 
-export function decCart(cart, id) {
-  return addToCart(cart, id, -1);
+export function decrementarCarrito(carrito, id) {
+  return agregarAlCarrito(carrito, id, -1);
 }
 
-export function removeFromCart(cart, id) {
-  return cart.filter((x) => x.id !== id);
+export function removerDelCarrito(carrito, id) {
+  return carrito.filter((x) => x.id !== id);
 }
 
-export function checkout(cart, caps, inventario, inventoryRecruits, byId) {
-  if (cart.length === 0) return { ok: false, reason: "empty" };
+export function realizarCompra(carrito, tapas, inventario, reclutasInventario, porId) {
+  if (carrito.length === 0) return { ok: false, reason: "empty" };
 
-  const cartTotal = cart.reduce((acc, row) => {
-    const entry = byId.get(row.id);
+  const totalCarrito = carrito.reduce((acc, row) => {
+    const entry = porId.get(row.id);
     if (!entry) return acc;
     return acc + entry.price * row.qty;
   }, 0);
 
-  if (caps < cartTotal) return { ok: false, reason: "no-caps" };
+  if (tapas < totalCarrito) return { ok: false, reason: "no-caps" };
 
-  let newInventario = inventario;
-  let newInventoryRecruits = [...inventoryRecruits];
+  let nuevoInventario = inventario;
+  let nuevosReclutasInventario = [...reclutasInventario];
 
-  for (const row of cart) {
-    const entry = byId.get(row.id);
+  for (const row of carrito) {
+    const entry = porId.get(row.id);
     if (entry.kind === "item") {
-      newInventario = upsertQty(newInventario, row.id, row.qty);
+      nuevoInventario = upsertQty(nuevoInventario, row.id, row.qty);
     } else if (entry.kind === "recluta") {
       for (let i = 0; i < row.qty; i++) {
-        newInventoryRecruits.push({ id: entry.id, name: entry.name, weapon: null, ammo: 0, helmet: null, vest: null, consumable: null });
+        nuevosReclutasInventario.push({ id: entry.id, name: entry.name, weapon: null, ammo: 0, helmet: null, vest: null, consumable: null });
       }
     }
   }
 
   return {
     ok: true,
-    newCaps: caps - cartTotal,
-    newInventario,
-    newInventoryRecruits,
-    newCart: []
+    nuevasTapas: tapas - totalCarrito,
+    nuevoInventario,
+    nuevosReclutasInventario,
+    nuevoCarrito: []
   };
 }

@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
-import { useGame } from "../context/GameContext";
+import { useInventory } from "../context/InventoryContext";
+import { useTeam } from "../context/TeamContext";
 import RecruitCard from "../components/recruits/RecruitCard";
 
 export default function Home() {
-  const { inventoryRecruits, team } = useGame();
+  const { reclutasInventario } = useInventory();
+  const { equipo } = useTeam();
 
   return (
     <div>
@@ -21,12 +23,12 @@ export default function Home() {
         </Link>
       </div>
 
-      {team.length > 0 && (
+      {equipo.length > 0 && (
         <section>
           <h2>Equipo Actual</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
-            {team.map((index) => (
-              <RecruitCard key={index} recruit={inventoryRecruits[index]} index={index} />
+            {equipo.map((index) => (
+              <RecruitCard key={index} recruit={reclutasInventario[index]} index={index} />
             ))}
           </div>
         </section>
