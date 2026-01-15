@@ -1,0 +1,17 @@
+/**
+ * Tema y colores del juego.
+ */
+
+export const theme = {
+  colors: {
+    bg: '#060606',
+    panel: '#0b0b0b',
+    border: '#333',
+    allyTeam: '#1d3a6b', // azul
+    enemyTeam: '#6b1d1d', // rojo
+    cover: '#8a8a8a',
+    validMove: '#133a22', // verde
+    selected: '#fff',
+    text: '#ccc',
+  },
+};
