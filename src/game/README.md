@@ -14,8 +14,6 @@ src/game/
 │       ├── Escenario/              # Renderizado del tablero
 │       │   ├── Escenario.jsx       # Board principal
 │       │   └── Cell.jsx            # Celda individual
-│       ├── Reclutas/               # Panel de control de aliados
-│       │   └── ReclutasPanel.jsx
 │       ├── Enemigos/               # Panel de info de enemigos
 │       │   └── EnemigosPanel.jsx
 │       └── UI/                     # Componentes de interfaz

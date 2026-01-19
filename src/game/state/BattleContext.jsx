@@ -9,11 +9,11 @@ import { battleReducer } from './battleReducer';
 
 const BattleContext = createContext(null);
 
-export function BattleProvider({ children, initialTeamA = [], initialTeamB = [], initialCover = null }) {
+export function BattleProvider({ children, initialTeamA = [], initialTeamB = [], initialCover = null, onUnitKilled = null }) {
   const initialState = createBattleState(initialTeamA, initialTeamB, initialCover);
   const [state, dispatch] = useReducer(battleReducer, initialState);
 
-  const value = { state, dispatch };
+  const value = { state, dispatch, onUnitKilled };
 
   return (
     <BattleContext.Provider value={value}>

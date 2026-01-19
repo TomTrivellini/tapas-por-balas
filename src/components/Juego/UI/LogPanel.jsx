@@ -2,8 +2,8 @@
  * LogPanel.jsx - Panel de eventos del juego
  */
 
-import { useBattle } from '../../state/BattleContext';
-import { theme } from '../../state/theme';
+import { useBattle } from '../../../game/state/BattleContext';
+import { theme } from '../../../game/state/theme';
 
 export default function LogPanel() {
   const { state } = useBattle();

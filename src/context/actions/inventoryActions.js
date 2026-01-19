@@ -1,4 +1,6 @@
-// recruitActions.js - Funciones puras para manejar reclutas
+import { getShieldValue } from "../../data/shopItems";
+
+// inventoryActions.js - Funciones puras para manejar reclutas
 
 function upsertQty(list, id, delta) {
   const next = list.map((x) => ({ ...x }));
@@ -62,14 +64,18 @@ export function removerMunicion(reclutas, inventario, indiceRecluta, cantidad) {
 
 export function equiparCasco(reclutas, inventario, indiceRecluta, idCasco, porId) {
   const casco = porId.get(idCasco);
-  if (!casco || casco.id !== "mask") return { reclutas, inventario };
+  if (!casco || casco.type !== "equipo" || casco.slot !== "helmet") return { reclutas, inventario };
 
   let nuevoInventario = upsertQty(inventario, idCasco, -1);
   const nuevosReclutas = [...reclutas];
   if (nuevosReclutas[indiceRecluta].helmet) {
     nuevoInventario = upsertQty(nuevoInventario, nuevosReclutas[indiceRecluta].helmet, 1);
   }
-  nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], helmet: idCasco };
+  nuevosReclutas[indiceRecluta] = {
+    ...nuevosReclutas[indiceRecluta],
+    helmet: idCasco,
+    helmetHp: getShieldValue(idCasco),
+  };
   return { reclutas: nuevosReclutas, inventario: nuevoInventario };
 }
 
@@ -77,7 +83,7 @@ export function desequiparCasco(reclutas, inventario, indiceRecluta) {
   const nuevosReclutas = [...reclutas];
   if (nuevosReclutas[indiceRecluta].helmet) {
     const nuevoInventario = upsertQty(inventario, nuevosReclutas[indiceRecluta].helmet, 1);
-    nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], helmet: null };
+    nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], helmet: null, helmetHp: 0 };
     return { reclutas: nuevosReclutas, inventario: nuevoInventario };
   }
   return { reclutas, inventario };
@@ -85,14 +91,18 @@ export function desequiparCasco(reclutas, inventario, indiceRecluta) {
 
 export function equiparChaleco(reclutas, inventario, indiceRecluta, idChaleco, porId) {
   const chaleco = porId.get(idChaleco);
-  if (!chaleco || chaleco.id !== "vest") return { reclutas, inventario };
+  if (!chaleco || chaleco.type !== "equipo" || chaleco.slot !== "vest") return { reclutas, inventario };
 
   let nuevoInventario = upsertQty(inventario, idChaleco, -1);
   const nuevosReclutas = [...reclutas];
   if (nuevosReclutas[indiceRecluta].vest) {
     nuevoInventario = upsertQty(nuevoInventario, nuevosReclutas[indiceRecluta].vest, 1);
   }
-  nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], vest: idChaleco };
+  nuevosReclutas[indiceRecluta] = {
+    ...nuevosReclutas[indiceRecluta],
+    vest: idChaleco,
+    vestHp: getShieldValue(idChaleco),
+  };
   return { reclutas: nuevosReclutas, inventario: nuevoInventario };
 }
 
@@ -100,30 +110,30 @@ export function desequiparChaleco(reclutas, inventario, indiceRecluta) {
   const nuevosReclutas = [...reclutas];
   if (nuevosReclutas[indiceRecluta].vest) {
     const nuevoInventario = upsertQty(inventario, nuevosReclutas[indiceRecluta].vest, 1);
-    nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], vest: null };
+    nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], vest: null, vestHp: 0 };
     return { reclutas: nuevosReclutas, inventario: nuevoInventario };
   }
   return { reclutas, inventario };
 }
 
-export function equiparConsumible(reclutas, inventario, indiceRecluta, idConsumible, porId) {
-  const consumible = porId.get(idConsumible);
-  if (!consumible || consumible.type !== "consumable") return { reclutas, inventario };
+export function equiparObjeto(reclutas, inventario, indiceRecluta, idObjeto, porId) {
+  const objeto = porId.get(idObjeto);
+  if (!objeto || objeto.type !== "object") return { reclutas, inventario };
 
-  let nuevoInventario = upsertQty(inventario, idConsumible, -1);
+  let nuevoInventario = upsertQty(inventario, idObjeto, -1);
   const nuevosReclutas = [...reclutas];
-  if (nuevosReclutas[indiceRecluta].consumable) {
-    nuevoInventario = upsertQty(nuevoInventario, nuevosReclutas[indiceRecluta].consumable, 1);
+  if (nuevosReclutas[indiceRecluta].objectItem) {
+    nuevoInventario = upsertQty(nuevoInventario, nuevosReclutas[indiceRecluta].objectItem, 1);
   }
-  nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], consumable: idConsumible };
+  nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], objectItem: idObjeto };
   return { reclutas: nuevosReclutas, inventario: nuevoInventario };
 }
 
-export function desequiparConsumible(reclutas, inventario, indiceRecluta) {
+export function desequiparObjeto(reclutas, inventario, indiceRecluta) {
   const nuevosReclutas = [...reclutas];
-  if (nuevosReclutas[indiceRecluta].consumable) {
-    const nuevoInventario = upsertQty(inventario, nuevosReclutas[indiceRecluta].consumable, 1);
-    nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], consumable: null };
+  if (nuevosReclutas[indiceRecluta].objectItem) {
+    const nuevoInventario = upsertQty(inventario, nuevosReclutas[indiceRecluta].objectItem, 1);
+    nuevosReclutas[indiceRecluta] = { ...nuevosReclutas[indiceRecluta], objectItem: null };
     return { reclutas: nuevosReclutas, inventario: nuevoInventario };
   }
   return { reclutas, inventario };

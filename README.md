@@ -1,16 +1,47 @@
-# React + Vite
+# Balas por Tapas - E-commerce + Juego
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SPA de e-commerce hecha con React + Vite. Incluye catálogo, detalle, carrito con checkout y un mini juego táctico, todo con estado global vía Context.
 
-Currently, two official plugins are available:
+## Funcionalidades
+- Listado y detalle de productos con React Router.
+- Carrito con cantidades, subtotales y total.
+- Checkout con generación de orden en Firestore.
+- Widget de carrito con contador de unidades.
+- Renderizado condicional: loaders, carrito vacío y producto sin stock.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
+- React + Vite
+- React Router
+- Firebase Firestore
 
-## React Compiler
+## Configuración local
+1) Instalar dependencias
+```
+npm install
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2) Crear `.env` desde `.env.example` con tus credenciales de Firebase.
 
-## Expanding the ESLint configuration
+3) Iniciar el proyecto
+```
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Firestore
+Se utilizan dos colecciones:
+- `products`: catálogo de productos.
+- `orders`: órdenes generadas desde el checkout.
+
+Para poblar la colección `products`, podés usar los datos locales en `src/data/shopItems.js` y llamar a:
+```
+seedProducts(getShopItems())
+```
+desde un componente temporal o desde la consola del navegador.
+
+La función `seedProducts` vive en `src/data/shopService.js`.
+
+## Scripts
+- `npm run dev`
+- `npm run build`
+- `npm run preview`
+- `npm run lint`

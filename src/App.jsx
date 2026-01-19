@@ -11,12 +11,13 @@ import Shop from "./pages/Shop.jsx";
 import CartPage from "./pages/CartPage.jsx";
 import InventoryPage from "./pages/InventoryPage.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import ItemDetailContainer from "./containers/ItemDetailContainer.jsx";
 
 export default function App() {
   return (
     <InventoryProvider>
-      <CartProvider>
-        <TeamProvider>
+      <TeamProvider>
+        <CartProvider>
           <div className="app">
             <Navbar />
 
@@ -25,6 +26,7 @@ export default function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/shop/category/:categoryId" element={<Shop />} />
+                <Route path="/item/:itemId" element={<ItemDetailContainer />} />
                 <Route path="/inventory" element={<InventoryPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/category/:categoryId" element={<Navigate to="/shop" replace />} />
@@ -34,8 +36,8 @@ export default function App() {
 
             <Footer />
           </div>
-        </TeamProvider>
-      </CartProvider>
+        </CartProvider>
+      </TeamProvider>
     </InventoryProvider>
   );
 }

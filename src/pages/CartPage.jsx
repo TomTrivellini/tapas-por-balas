@@ -1,14 +1,28 @@
+import { useState } from "react";
 import { useCart } from "../context/CartContext.jsx";
 import CartList from "../components/cart/CartList";
+import CheckoutForm from "../components/cart/CheckoutForm";
 
 export default function CartPage() {
-  const { carrito, totalCarrito, tapas, realizarCompra } = useCart();
+  const { totalCarrito, tapas, confirmarCompra, cantidadCarrito } = useCart();
+  const [orderId, setOrderId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  function onCheckout() {
-    const r = realizarCompra();
-    if (r.ok) alert("Compra realizada. Se agregó todo al inventario.");
-    else if (r.reason === "no-caps") alert("No te alcanzan las tapas.");
-    else alert("El carrito está vacío.");
+  async function onCheckout(buyer) {
+    setIsSubmitting(true);
+    setErrorMsg("");
+    const r = await confirmarCompra(buyer);
+    if (r.ok) {
+      setOrderId(r.orderId);
+    } else if (r.reason === "no-caps") {
+      setErrorMsg("No te alcanzan las tapas.");
+    } else if (r.reason === "empty") {
+      setErrorMsg("El carrito está vacío.");
+    } else {
+      setErrorMsg("No se pudo crear la orden. Intenta de nuevo.");
+    }
+    setIsSubmitting(false);
   }
 
   return (
@@ -27,9 +41,14 @@ export default function CartPage() {
           <b>${totalCarrito}</b>
         </div>
 
-        <button className="btn btn--primary btn--big" onClick={onCheckout} disabled={carrito.length === 0}>
-          Comprar
-        </button>
+        {errorMsg && <p className="notice">{errorMsg}</p>}
+        {orderId ? (
+          <div className="order__success">
+            Orden generada: <span className="order__id">{orderId}</span>
+          </div>
+        ) : (
+          <CheckoutForm onSubmit={onCheckout} disabled={isSubmitting || cantidadCarrito === 0} />
+        )}
       </div>
     </div>
   );

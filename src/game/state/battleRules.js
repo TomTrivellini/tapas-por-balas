@@ -1,145 +1,155 @@
 /**
- * Reglas del juego táctico.
- * 
- * Funciones puras para validar y calcular acciones del juego.
+ * Battle rules.
  */
 
-/**
- * Obtener todas las celdas válidas para mover una unidad.
- * - 1 casillero ortogonal (arriba, abajo, izquierda, derecha)
- * - Misma mitad del tablero (no cruzar frontera c=2/c=3)
- * - Celda no ocupada por aliado (sí ocupada por enemigo es invalid)
- */
-export const validMoveCells = (unit, board, units) => {
-  const { r, c, team } = unit;
+export const getUnitPlanningPosition = (unit, unitGhosts = {}) => {
+  if (!unit) return null;
+  if (unitGhosts && typeof unitGhosts === 'object') {
+    const ghost = unitGhosts[unit.id];
+    if (ghost && typeof ghost.r === 'number' && typeof ghost.c === 'number') {
+      return ghost;
+    }
+  }
+  return { r: unit.r, c: unit.c };
+};
+
+const getBoardLimits = (board) => {
   const colsPerSide = board.colsPerSide;
-  const rows = board.rows;
+  const totalCols = board.totalCols ?? colsPerSide * 2 + 1;
+  const middleColumn = board.middleColumn ?? colsPerSide;
+  return { totalCols, middleColumn };
+};
 
-  // Límites de la mitad del tablero
-  const minCol = team === 'A' ? 0 : colsPerSide;
-  const maxCol = team === 'A' ? colsPerSide - 1 : colsPerSide * 2 - 1;
+const isWithinTeamBounds = (team, column, board) => {
+  const { middleColumn, totalCols } = getBoardLimits(board);
+  if (team === 'A') {
+    return column >= 0 && column < middleColumn;
+  }
+  return column > middleColumn && column < totalCols;
+};
 
-  const directions = [
-    { r: r - 1, c }, // arriba
-    { r: r + 1, c }, // abajo
-    { r, c: c - 1 }, // izquierda
-    { r, c: c + 1 }, // derecha
-  ];
+const manhattanDistance = (from, to) =>
+  Math.abs(from.r - to.r) + Math.abs(from.c - to.c);
 
-  return directions.filter((pos) => {
-    // Dentro de los límites del tablero
-    if (pos.r < 0 || pos.r >= rows) return false;
-    // Dentro de los límites de la mitad
-    if (pos.c < minCol || pos.c > maxCol) return false;
-    // No ocupada por otro aliado
-    const occupant = units.find((u) => u.r === pos.r && u.c === pos.c && u.alive);
-    if (occupant && occupant.team === team) return false;
+const isFriendlyOccupied = (r, c, units, team, unitGhosts, selfId) =>
+  units.some((unit) => {
+    if (!unit.alive || unit.team !== team) return false;
+    if (unit.id === selfId) return false;
+    if (unit.r !== r || unit.c !== c) return false;
+    const ghost = unitGhosts[unit.id];
+    if (ghost && (ghost.r !== unit.r || ghost.c !== unit.c)) {
+      return false;
+    }
     return true;
   });
+
+const isReservedByGhost = (r, c, unitGhosts, selfId) =>
+  Object.entries(unitGhosts).some(([id, ghost]) => {
+    if (id === selfId || !ghost) return false;
+    return ghost.r === r && ghost.c === c;
+  });
+
+export const validMoveCells = (unit, board, units, unitGhosts = {}) => {
+  if (!unit || !board || unit.ap <= 0) return [];
+  const ghostMap = unitGhosts && typeof unitGhosts === 'object' ? unitGhosts : {};
+  const base = getUnitPlanningPosition(unit, ghostMap);
+  if (!base) return [];
+
+  const cells = [];
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const distance = Math.abs(dr) + Math.abs(dc);
+      if (distance !== 1) continue;
+      const candidate = { r: base.r + dr, c: base.c + dc };
+      if (candidate.r < 0 || candidate.r >= board.rows) continue;
+      if (!isWithinTeamBounds(unit.team, candidate.c, board)) continue;
+      if (isFriendlyOccupied(candidate.r, candidate.c, units, unit.team, ghostMap, unit.id)) continue;
+      if (isReservedByGhost(candidate.r, candidate.c, ghostMap, unit.id)) continue;
+      cells.push(candidate);
+    }
+  }
+  return cells;
 };
 
-/**
- * Obtener el objetivo de un disparo en una fila.
- * - Busca el enemigo más cercano a la frontera (hacia la mitad opuesta)
- * - Ignora aliados
- */
 export const pickShotTarget = (shooterTeam, row, board, units) => {
-  // Enemigos vivos en esa fila
-  const enemiesInRow = units.filter(
-    (u) => u.r === row && u.alive && u.team !== shooterTeam
+  const candidates = units.filter(
+    (unit) => unit.team !== shooterTeam && unit.alive && unit.r === row && !unit.isCovered
   );
-
-  if (enemiesInRow.length === 0) return null;
-
-  // Enemigo más cercano a la frontera
+  if (candidates.length === 0) return null;
   if (shooterTeam === 'A') {
-    // Aliados disparan hacia derecha (frontera en c=3), buscamos el más cercano a c=3
-    return enemiesInRow.reduce((closest, curr) =>
-      curr.c > closest.c ? curr : closest
-    );
-  } else {
-    // Enemigos disparan hacia izquierda (frontera en c=2), buscamos el más cercano a c=2
-    return enemiesInRow.reduce((closest, curr) =>
-      curr.c < closest.c ? curr : closest
+    return candidates.reduce((best, current) =>
+      current.c > best.c ? current : best
     );
   }
+  return candidates.reduce((best, current) =>
+    current.c < best.c ? current : best
+  );
 };
 
-/**
- * Resolver movimientos simultáneos.
- * - Si una unidad abandona un slot, ese slot está disponible en el mismo turno
- * - Prohibir terminar con 2 unidades en mismo slot
- * - Conflictos: prioridad = Team A primero, luego por id (A1 < A2 < A3)
- */
 export const resolveMovesSimultaneous = (movedUnits, units) => {
-  /**
-   * movedUnits: {unitId: {r, c}} destinos planificados
-   * units: array original de unidades
-   * return: {unitId: {r, c}} destinos finales resueltos
-   */
+  const priority = (id) => (id && id.charAt(0) === 'A' ? 0 : 1);
+  const sorted = Object.keys(movedUnits).sort((a, b) => {
+    const pa = priority(a);
+    const pb = priority(b);
+    if (pa !== pb) return pa - pb;
+    return a.localeCompare(b);
+  });
 
-  const sortPriority = (id1, id2) => {
-    const team1 = id1.charAt(0);
-    const team2 = id2.charAt(0);
-    if (team1 !== team2) return team1 === 'A' ? -1 : 1;
-    return id1.localeCompare(id2);
-  };
-
-  const sortedIds = Object.keys(movedUnits).sort(sortPriority);
-  const result = {};
-  const occupiedSlots = new Set();
-
-  // Unidades que NO se mueven también ocupan slots
-  units.forEach((u) => {
-    if (!movedUnits[u.id]) {
-      occupiedSlots.add(`${u.r},${u.c}`);
+  const occupied = new Set();
+  units.forEach((unit) => {
+    if (!movedUnits[unit.id]) {
+      occupied.add(`${unit.r},${unit.c}`);
     }
   });
 
-  // Procesar movimientos en orden de prioridad
-  sortedIds.forEach((unitId) => {
-    const destination = movedUnits[unitId];
-    const slot = `${destination.r},${destination.c}`;
-
-    if (!occupiedSlots.has(slot)) {
-      result[unitId] = destination;
-      occupiedSlots.add(slot);
+  const resolved = {};
+  sorted.forEach((unitId) => {
+    const dest = movedUnits[unitId];
+    const slot = `${dest.r},${dest.c}`;
+    if (!occupied.has(slot)) {
+      resolved[unitId] = dest;
+      occupied.add(slot);
     } else {
-      // Conflicto: mantener posición original
       const unit = units.find((u) => u.id === unitId);
-      result[unitId] = { r: unit.r, c: unit.c };
+      resolved[unitId] = unit ? { r: unit.r, c: unit.c } : dest;
     }
   });
 
-  return result;
+  return resolved;
 };
 
-/**
- * Validar si una unidad tiene suficiente munición para disparar.
- */
-export const canShoot = (unit) => unit.ammo > 0;
+export const calculateMovementAPCost = (from, to) => manhattanDistance(from, to);
 
-/**
- * Validar si una unidad está sobre cobertura.
- */
-export const isOnCover = (unit, board) => {
+export const canRun = (unit, board = null) => {
+  if (!unit) return false;
+  if (unit.team === 'A') {
+    return unit.c === 0;
+  }
+  const { totalCols } = board ? getBoardLimits(board) : { totalCols: 7 };
+  return unit.c === totalCols - 1;
+};
+
+export const canShoot = (unit, lastActionWasReload = false) =>
+  Boolean(
+    unit?.weapon &&
+    (unit.loaded || lastActionWasReload || unit.weaponInstantShot || unit.weaponNoReload)
+  );
+
+export const hasCover = (unit, board) => {
+  if (!unit || !board) return false;
+  const { totalCols } = getBoardLimits(board);
   if (unit.r < 0 || unit.r >= board.rows) return false;
-  if (unit.c < 0 || unit.c >= board.colsPerSide * 2) return false;
-  return board.cover[unit.r][unit.c];
+  if (unit.c < 0 || unit.c >= totalCols) return false;
+  return Boolean(board.cover?.[unit.r]?.[unit.c]);
 };
 
-/**
- * Calcular ammo total de un equipo.
- */
-export const getTotalAmmo = (team, units) => {
-  return units
-    .filter((u) => u.team === team && u.alive)
-    .reduce((sum, u) => sum + u.ammo, 0);
-};
+export const isTeamEliminated = (team, units) =>
+  !units.some((unit) => unit.team === team && unit.alive);
 
-/**
- * Verificar si un equipo está eliminado.
- */
-export const isTeamEliminated = (team, units) => {
-  return !units.some((u) => u.team === team && u.alive);
-};
+export const getTotalAmmo = (team, units) =>
+  units.reduce((total, unit) => {
+    if (unit.team !== team || !unit.alive) return total;
+    const loadedAmmo = unit.loaded ? 1 : 0;
+    return total + (unit.ammo || 0) + loadedAmmo;
+  }, 0);
