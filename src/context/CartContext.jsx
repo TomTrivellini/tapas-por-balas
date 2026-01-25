@@ -1,9 +1,8 @@
 import { createContext, useContext, useMemo, useState } from "react";
-import { getShopItems } from "../data/shopItems";
 import { createOrder } from "../data/shopService";
 import { agregarAlCarrito as agregarAlCarritoAction, incrementarCarrito as incrementarCarritoAction, decrementarCarrito as decrementarCarritoAction, removerDelCarrito as removerDelCarritoAction, realizarCompra as realizarCompraAction } from "./actions/cartActions";
 import { useInventory } from "./InventoryContext";
-import { useTeam } from "./TeamContext";
+import { useCatalog } from "./CatalogContext";
 
 const CartContext = createContext(null);
 
@@ -16,41 +15,10 @@ function sumarTotal(list) {
 export function CartProvider({ children }) {
   const [tapas, setTapas] = useState(tapasIniciales);
   const [carrito, setCarrito] = useState([]);
-  const { reclutasInventario, agregarAlInventario } = useInventory();
-  const { equipo } = useTeam();
-
-  const catalogo = useMemo(() => getShopItems(), []);
-  const porId = useMemo(() => {
-    const m = new Map();
-    for (const x of catalogo) m.set(x.id, x);
-    return m;
-  }, [catalogo]);
-
-  const exposedCarrito = useMemo(() => {
-    // 1. Obtener las armas del equipo activo
-    const equippedWeapons = equipo
-      .map(idx => reclutasInventario[idx])
-      .filter(r => r && !r.muerto && r.weapon)
-      .map(r => r.weapon);
-    
-    const uniqueWeapons = [...new Set(equippedWeapons)];
-    
-    // 2. Determinar la munición necesaria
-    const requiredAmmoIds = uniqueWeapons.map(weaponId => `amm-${weaponId}`);
-
-    // 3. Inyectar munición faltante al carrito visible
-    let newCarrito = [...carrito];
-    const cartIds = new Set(newCarrito.map(item => item.id));
-
-    requiredAmmoIds.forEach(ammoId => {
-      if (!cartIds.has(ammoId) && porId.has(ammoId)) {
-        newCarrito.push({ id: ammoId, qty: 0 });
-      }
-    });
-
-    return newCarrito;
-
-  }, [carrito, equipo, reclutasInventario, porId]);
+  const { agregarAlInventario } = useInventory();
+  const { items, itemsById } = useCatalog();
+  const catalogo = useMemo(() => items, [items]);
+  const porId = itemsById;
 
   const cantidadCarrito = useMemo(() => sumarTotal(carrito), [carrito]);
 
@@ -84,7 +52,7 @@ export function CartProvider({ children }) {
   function decrementarCarrito(id) {
     const entry = porId.get(id);
     if (!entry) return;
-    // Prevenir que la munición fijada se vaya a -1 si está en 0
+
     const itemInCart = carrito.find(item => item.id === id);
     if (!itemInCart || itemInCart.qty <= 0) return;
     setCarrito((prev) => decrementarCarritoAction(prev, id));
@@ -143,7 +111,7 @@ export function CartProvider({ children }) {
 
   const value = {
     tapas,
-    carrito: exposedCarrito, // Exponer el carrito 'memoizado'
+    carrito,
     cantidadCarrito,
     totalCarrito,
     porId,
@@ -151,8 +119,8 @@ export function CartProvider({ children }) {
     agregarTapas,
     reiniciarCarrito,
     agregarAlCarrito,
-    sumarCarrito: incrementarCarrito, // Alias para el componente CartRow
-    restarCarrito: decrementarCarrito, // Alias para el componente CartRow
+    sumarCarrito: incrementarCarrito,
+    restarCarrito: decrementarCarrito,
     incrementarCarrito,
     decrementarCarrito,
     removerDelCarrito,

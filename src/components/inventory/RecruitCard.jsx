@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useInventory } from "../../context/InventoryContext";
+import { findAmmoIdForWeapon } from "../../data/catalogUtils";
 import { useTeam } from "../../context/TeamContext";
 import RecruitInventory from "./RecruitInventory";
+import UnitSprite from "../Juego/Sprites/UnitSprite";
+import { getItemSpriteClass } from "../items/itemSprite";
 
 export default function RecruitCard({ recruit, index }) {
   const {
@@ -36,34 +39,52 @@ export default function RecruitCard({ recruit, index }) {
   const trimmedName = editedName.trim();
   const helmetShield = helmet?.shield ?? 0;
   const vestShield = vest?.shield ?? 0;
+  const ammoId = weapon ? findAmmoIdForWeapon(weapon.id, porId) : null;
+  const ammoStock = ammoId
+    ? (inventario.find((item) => item.id === ammoId)?.qty || 0)
+    : 0;
+  const weaponSpriteClass = weapon ? getItemSpriteClass(weapon) : null;
+  const objectSpriteClass = equipedObject ? getItemSpriteClass(equipedObject) : null;
 
   const handleSaveName = () => {
-    if (!trimmedName || trimmedName === recruit.name) {
+    const nextName = trimmedName.slice(0, 10);
+    if (!nextName || nextName === recruit.name) {
       setIsEditingName(false);
       setEditedName(recruit.name);
       return;
     }
-    renombrarRecluta(index, trimmedName);
+    renombrarRecluta(index, nextName);
     setIsEditingName(false);
   };
 
   return (
-    <div style={{ border: "1px solid #ccc", padding: "1rem", borderRadius: "4px" }}>
-      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
+    <div className="recruit-card">
+      <div className="recruit-card__preview">
+        <div className="recruit-card__preview-grid">
+          <UnitSprite unit={recruit} className="recruit-card__sprite" hideWeapon hideObjects />
+          {objectSpriteClass && (
+            <span
+              className={`${objectSpriteClass} recruit-card__equip-icon recruit-card__equip-icon--object`}
+              aria-hidden="true"
+            />
+          )}
+          {weaponSpriteClass && (
+            <span
+              className={`${weaponSpriteClass} recruit-card__equip-icon recruit-card__equip-icon--weapon`}
+              aria-hidden="true"
+            />
+          )}
+        </div>
+      </div>
+      <div className="recruit-card__header">
         {isEditingName ? (
           <>
             <input
               type="text"
               value={editedName}
               onChange={(e) => setEditedName(e.target.value)}
-              style={{
-                flex: 1,
-                padding: "4px 6px",
-                borderRadius: "4px",
-                border: "1px solid #555",
-                background: "#111",
-                color: "#fff",
-              }}
+              maxLength={10}
+              className="recruit-card__input"
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSaveName();
                 if (e.key === "Escape") {
@@ -76,7 +97,7 @@ export default function RecruitCard({ recruit, index }) {
             <button
               onClick={handleSaveName}
               disabled={!trimmedName}
-              style={{ padding: "4px 8px", marginLeft: "4px" }}
+              className="recruit-card__btn recruit-card__btn--save"
             >
               Guardar
             </button>
@@ -85,18 +106,18 @@ export default function RecruitCard({ recruit, index }) {
                 setIsEditingName(false);
                 setEditedName(recruit.name);
               }}
-              style={{ padding: "4px 8px" }}
+              className="recruit-card__btn recruit-card__btn--cancel"
             >
               Cancelar
             </button>
           </>
         ) : (
           <>
-            <h3 style={{ margin: 0, flex: 1 }}>{recruit.name}</h3>
+            <h3 className="recruit-card__name">{recruit.name}</h3>
             <button
               onClick={() => setIsEditingName(true)}
               title="Renombrar recluta"
-              style={{ padding: "2px 6px" }}
+              className="recruit-card__btn recruit-card__btn--icon"
             >
               ✎
             </button>
@@ -110,9 +131,9 @@ export default function RecruitCard({ recruit, index }) {
           onClick={() => agregarAlEquipo(index)} 
           disabled={isTeamFull}
           title={isTeamFull ? "El equipo está lleno (máximo 3)" : ""}
-          style={{ opacity: isTeamFull ? 0.5 : 1, cursor: isTeamFull ? "not-allowed" : "pointer" }}
+          className="recruit-card__team-btn"
         >
-          {isTeamFull ? "❌ Equipo Lleno" : "Agregar al Equipo"}
+          {isTeamFull ? " Equipo Lleno" : "Agregar al Equipo"}
         </button>
       )}
       <div>
@@ -120,7 +141,18 @@ export default function RecruitCard({ recruit, index }) {
         {weapon && (
           <>
             <button onClick={() => desequiparArma(index)}>Quitar</button>
-            <div>Munición: {recruit.ammo} <button onClick={() => removerMunicion(index, 1)} disabled={recruit.ammo === 0}>-</button> <button onClick={() => agregarMunicion(index, `amm-${recruit.weapon}`, 1)} disabled={(inventario.find(item => item.id === `amm-${recruit.weapon}`)?.qty || 0) === 0}>+</button></div>
+            <div>
+              Munición: {recruit.ammo}
+              <button onClick={() => removerMunicion(index, 1)} disabled={recruit.ammo === 0}>
+                -
+              </button>
+              <button
+                onClick={() => ammoId && agregarMunicion(index, ammoId, 1)}
+                disabled={!ammoId || ammoStock === 0}
+              >
+                +
+              </button>
+            </div>
           </>
         )}
         {!weapon && <RecruitInventory recruitIndex={index} type="arma" />}
@@ -129,7 +161,7 @@ export default function RecruitCard({ recruit, index }) {
         <strong>Casco:</strong> {helmet ? helmet.name : "Ninguno"}
         {helmet && (
           <>
-            <span style={{ marginLeft: "6px", fontSize: "12px", color: "#aaa" }}>
+            <span className="recruit-card__shield">
               Escudo: {(recruit.helmetHp ?? helmetShield)}/{helmetShield}
             </span>
             <button onClick={() => desequiparCasco(index)}>Quitar</button>
@@ -141,7 +173,7 @@ export default function RecruitCard({ recruit, index }) {
         <strong>Chaleco:</strong> {vest ? vest.name : "Ninguno"}
         {vest && (
           <>
-            <span style={{ marginLeft: "6px", fontSize: "12px", color: "#aaa" }}>
+            <span className="recruit-card__shield">
               Escudo: {(recruit.vestHp ?? vestShield)}/{vestShield}
             </span>
             <button onClick={() => desequiparChaleco(index)}>Quitar</button>

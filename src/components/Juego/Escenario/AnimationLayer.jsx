@@ -1,157 +1,134 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import UnitSprite from "../Sprites/UnitSprite";
 
-const FRAME_DURATION = 1000;
+const MOVE_PHASE_MS = 1000;
+const SHOT_PHASE_MS = 1000;
+const SHOT_TRAVEL_MS = SHOT_PHASE_MS;
 
-export default function AnimationLayer({ board, frame, isAnimating }) {
+const getCellPosition = (r, c) => ({
+  top: `calc(var(--cell-size) * ${r} + var(--cell-half))`,
+  left: c === -1
+    ? "calc(var(--cell-half) * -1)"
+    : `calc(var(--cell-size) * ${c} + var(--cell-half))`,
+});
+
+const resolveOverlayPhase = (objectKind) => (
+  objectKind === "secondary" ? "shot" : "hit"
+);
+
+export default function AnimationLayer({ frame, isAnimating, units = [] }) {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [phase, setPhase] = useState("move");
 
   useEffect(() => {
     if (!frame || !isAnimating) return;
     setRefreshKey((value) => value + 1);
   }, [frame?.id, isAnimating]);
 
+  useEffect(() => {
+    if (!frame || !isAnimating) return;
+    setPhase("move");
+    const shotTimer = setTimeout(() => setPhase("shot"), MOVE_PHASE_MS);
+    const hitTimer = setTimeout(() => setPhase("hit"), MOVE_PHASE_MS + SHOT_PHASE_MS);
+    return () => {
+      clearTimeout(shotTimer);
+      clearTimeout(hitTimer);
+    };
+  }, [isAnimating, frame?.id]);
+
   if (!frame || !isAnimating) {
     return null;
   }
 
-  const totalCols = board.totalCols || board.colsPerSide * 2;
-  const cellWidth = 100 / totalCols;
-  const cellHeight = 100 / board.rows;
-
   const events = frame.events || [];
-  const moveEvents = events.filter((event) => event.type === 'move');
-  const shotEvents = events.filter((event) => event.type === 'shot');
+  const moveEvents = events.filter((event) => event.type === "move");
+  const shotEvents = events.filter((event) => event.type === "shot");
+  const objectEvents = events.filter((event) => event.type === "object");
+  const coverEvents = events.filter((event) => event.type === "cover");
+
+  const moveByUnit = new Map(moveEvents.map((event) => [event.unitId, event]));
+  const objectByUnit = new Map(objectEvents.map((event) => [event.unitId, event]));
+  const coverByUnit = new Map(coverEvents.map((event) => [event.unitId, event]));
+  const hitUnitIds = new Set(
+    shotEvents
+      .filter((event) => event.result === "hit" && event.hitType === "hp" && event.targetId)
+      .map((event) => event.targetId)
+  );
+
+  const liveUnits = units.filter((unit) => unit && unit.alive);
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        overflow: 'visible',
-        zIndex: 20,
-      }}
-    >
-      {moveEvents.map((event) => (
-        <MoveGhost
-          key={event.id}
-          event={event}
-          cellWidth={cellWidth}
-          cellHeight={cellHeight}
+    <div className="anim-layer">
+      {liveUnits.map((unit) => (
+        <AnimatedUnit
+          key={unit.id}
+          unit={unit}
+          moveEvent={moveByUnit.get(unit.id)}
+          overlayEvent={objectByUnit.get(unit.id)}
+          coverEvent={coverByUnit.get(unit.id)}
+          phase={phase}
           refreshKey={refreshKey}
+          isHit={phase === "hit" && hitUnitIds.has(unit.id)}
         />
       ))}
       {shotEvents.map((event) => (
-        <ShotProjectile
-          key={event.id}
-          event={event}
-          cellWidth={cellWidth}
-          cellHeight={cellHeight}
-        />
+        <ShotProjectile key={event.id} event={event} phase={phase} />
       ))}
     </div>
   );
 }
 
-function MoveGhost({ event, cellWidth, cellHeight, refreshKey }) {
-  const [positionIndex, setPositionIndex] = useState(0);
-  const path = useMemo(() => {
-    if (event.path && event.path.length > 0) {
-      return event.path;
-    }
-    if (event.from && event.to) {
-      return [event.from, event.to];
-    }
-    return [];
-  }, [event.path, event.from, event.to]);
-
-  useEffect(() => {
-    if (!path.length) return undefined;
-    setPositionIndex(0);
-    if (path.length === 1) return undefined;
-    const stepDuration = (event.duration || FRAME_DURATION) / (path.length - 1 || 1);
-    let currentIndex = 0;
-    const interval = setInterval(() => {
-      currentIndex += 1;
-      if (currentIndex >= path.length) {
-        clearInterval(interval);
-        return;
-      }
-      setPositionIndex(currentIndex);
-    }, stepDuration);
-    return () => clearInterval(interval);
-  }, [path, event.duration, refreshKey]);
-
-  if (!path.length) return null;
-  const current = path[Math.min(positionIndex, path.length - 1)];
-  if (!current) return null;
-
-  const left = (current.c + 0.5) * cellWidth;
-  const top = (current.r + 0.5) * cellHeight;
-  const size = Math.min(cellWidth, cellHeight) * 0.85;
-  const backgroundColor = event.team === 'A' ? '#6dd3ff' : '#ff7676';
-  const label = event.name ? event.name.slice(0, 8) : event.unitId;
+function AnimatedUnit({ unit, moveEvent, overlayEvent, coverEvent, phase, refreshKey, isHit }) {
+  const fromPos = moveEvent?.from ? { ...moveEvent.from } : { r: unit.r, c: unit.c };
+  const toPos = moveEvent?.to ? { ...moveEvent.to } : { r: unit.r, c: unit.c };
+  const teamClass = unit.team === "B" ? "anim-layer__unit--enemy" : "anim-layer__unit--ally";
+  const shouldMove = phase === "move" && Boolean(moveEvent);
+  const overlayKind = overlayEvent?.objectKind || "secondary";
+  const overlayPhase = resolveOverlayPhase(overlayKind);
+  const showOverlay = phase === overlayPhase && overlayEvent;
+  const overlayItem = showOverlay
+    ? { objectId: overlayEvent.objectId, visual: overlayEvent.visual }
+    : null;
+  const hideWeapon = showOverlay && overlayKind === "secondary";
+  const isCovering = phase === "move" && Boolean(coverEvent);
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        width: `${size}%`,
-        height: `${size}%`,
-        backgroundColor,
-        borderRadius: '4px',
-        left: `${left}%`,
-        top: `${top}%`,
-        transform: 'translate(-50%, -50%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#0b0b0b',
-        fontSize: '10px',
-        fontWeight: 700,
-        boxShadow: '0 0 6px rgba(0,0,0,0.35)',
-      }}
+    <motion.div
+      key={`${unit.id}-${refreshKey}`}
+      className={`anim-layer__unit ${teamClass}`}
+      initial={getCellPosition(fromPos.r, fromPos.c)}
+      animate={getCellPosition(toPos.r, toPos.c)}
+      transition={
+        shouldMove
+          ? { duration: MOVE_PHASE_MS / 1000, ease: "easeInOut" }
+          : { duration: 0 }
+      }
     >
-      {label}
-    </div>
+      <UnitSprite
+        unit={unit}
+        overlayItem={overlayItem}
+        hideWeapon={hideWeapon}
+        isHit={isHit}
+        className={isCovering ? "unit-sprite--covering" : ""}
+      />
+    </motion.div>
   );
 }
 
-function ShotProjectile({ event, cellWidth, cellHeight }) {
-  const startLeft = (event.from.c + 0.5) * cellWidth;
-  const startTop = (event.from.r + 0.5) * cellHeight;
-  const endLeft = (event.to.c + 0.5) * cellWidth;
-  const endTop = (event.to.r + 0.5) * cellHeight;
-  const [position, setPosition] = useState({ left: startLeft, top: startTop });
-
-  useEffect(() => {
-    setPosition({ left: startLeft, top: startTop });
-    const raf = requestAnimationFrame(() => {
-      setPosition({ left: endLeft, top: endTop });
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [startLeft, startTop, endLeft, endTop, event.id]);
-
-  const width = Math.max(1, cellWidth * 0.3);
-  const height = Math.max(0.5, cellHeight * 0.2);
+function ShotProjectile({ event, phase }) {
+  if (phase !== "shot") return null;
+  const shotClass = event.projectile === "net" ? "anim-layer__shot--net" : "anim-layer__shot--bullet";
+  const flipClass = event.team === "B" ? "anim-layer__shot--flip" : "";
+  const from = getCellPosition(event.from.r, event.from.c);
+  const to = getCellPosition(event.to.r, event.to.c);
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        width: `${width}%`,
-        height: `${height}%`,
-        backgroundColor: '#ff5b5b',
-        borderRadius: '2px',
-        transition: `left ${(event.duration || FRAME_DURATION) / 1000}s linear, top ${(event.duration || FRAME_DURATION) / 1000}s linear`,
-        left: `${position.left}%`,
-        top: `${position.top}%`,
-        transform: 'translate(-50%, -50%)',
-        boxShadow: '0 0 6px rgba(255,90,90,0.8)',
-      }}
+    <motion.div
+      className={`anim-layer__shot ${shotClass} ${flipClass}`}
+      initial={from}
+      animate={to}
+      transition={{ duration: SHOT_TRAVEL_MS / 1000, ease: "linear" }}
     />
   );
 }

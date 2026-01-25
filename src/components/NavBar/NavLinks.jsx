@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useCart } from '../../context/CartContext.jsx';
-import { useInventory } from '../../context/InventoryContext.jsx';
+import { useCart } from '../../context/CartContext';
+import { useInventory } from '../../context/InventoryContext';
+import carritoIcon from '../../assets/imagenes/carrito.png';
 
 export default function NavLinks() {
   const {
@@ -27,9 +28,15 @@ export default function NavLinks() {
         <button
           className="nav__cart-button"
           onClick={() => setIsCartOpen(!isCartOpen)}
+          aria-label="Carrito"
         >
-          <span className="nav__cart-icon" aria-hidden="true">🛒</span>
-          Carrito <span className="badge">{cantidadCarrito}</span>
+          <img
+            src={carritoIcon}
+            alt=""
+            aria-hidden="true"
+            className="nav__cart-icon"
+          />
+          <span className="badge">{cantidadCarrito}</span>
         </button>
         {isCartOpen && (
           <div className="cart-dropdown">

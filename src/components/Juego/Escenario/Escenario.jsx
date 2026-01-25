@@ -5,9 +5,8 @@
  */
 
 import { useState } from 'react';
-import { useBattle } from '../../../game/state/BattleContext';
-import { BATTLE_ACTIONS } from '../../../game/state/battleReducer';
-import { theme } from '../../../game/state/theme';
+import { useBattle } from '../../../game2/BattleContext';
+import { BATTLE_ACTIONS } from '../../../game2/battleActions';
 import Cell from './Cell';
 import ContextMenu from './ContextMenu';
 import AnimationLayer from './AnimationLayer';
@@ -45,7 +44,7 @@ export default function Escenario() {
     }
 
     const unit = units.find((u) => u.r === r && u.c === c && u.alive);
-    setContextMenu({ r, c, x: e.clientX, y: e.clientY, unit });
+    setContextMenu({ r, c, unit });
   };
 
   const handleCellRightClick = (e, r, c) => {
@@ -55,7 +54,7 @@ export default function Escenario() {
     if (board.middleColumn !== undefined && c === board.middleColumn) return;
     if (!selectedUnitId) return;
     const unit = units.find((u) => u.r === r && u.c === c && u.alive);
-    setContextMenu({ r, c, x: e.clientX, y: e.clientY, unit });
+    setContextMenu({ r, c, unit });
   };
 
   const handleAction = (actionType, payload = {}) => {
@@ -83,52 +82,46 @@ export default function Escenario() {
 
   const totalCols = board.totalCols || board.colsPerSide * 2;
 
-  const styles = {
-    container: {
-      backgroundColor: theme.colors.bg,
-      padding: '20px',
-      borderRadius: '8px',
-      marginBottom: '20px',
-    },
-    boardWrapper: {
-      position: 'relative',
-      width: '100%',
-    },
-    board: {
-      display: 'grid',
-      gridTemplateColumns: `repeat(${totalCols}, minmax(0, 1fr))`,
-      gap: '0',
-      border: `2px solid ${theme.colors.border}`,
-      backgroundColor: theme.colors.panel,
-      width: '100%',
-    },
-  };
-
   const currentFrame =
     isAnimating && state.animationQueue && state.animationQueue.length > 0
       ? state.animationQueue[0]
       : null;
+  const actionIndicator =
+    isAnimating && typeof currentFrame?.actionIndex === "number"
+      ? `${currentFrame.actionIndex + 1}`
+      : "-";
 
   return (
-    <div style={styles.container}>
-      <div style={styles.boardWrapper}>
-        {showApIndicator && (
-          <ContadorAp
-            label={`AP · ${selectedUnit?.name}`}
-            apMax={apMax}
-            apRemaining={apRemaining}
-          />
-        )}
-        <div style={styles.board}>
+    <div className="escenario">
+      {showApIndicator && (
+        <ContadorAp
+          label={`AP · ${selectedUnit?.name}`}
+          apMax={apMax}
+          apRemaining={apRemaining}
+        />
+      )}
+      <div className="action-counter">Accion: {actionIndicator}</div>
+      <div className="escenario__board-wrapper">
+        <div className="escenario__board">
           {Array.from({ length: board.rows }).map((_, r) =>
             Array.from({ length: totalCols }).map((_, c) => {
               const unit = units.find((u) => u.r === r && u.c === c);
+              const unitForRender = isAnimating ? null : unit;
               const cover = board.cover[r][c];
+              const coverHp = board.coverHp?.[r]?.[c] ?? null;
+              const middleColumn = board.middleColumn ?? board.colsPerSide;
+              const coverSide = c < middleColumn ? 'ally' : 'enemy';
               const isValidMove = validMoves.some((pos) => pos.r === r && pos.c === c);
               const isSelected = selectedUnitId && unit && unit.id === selectedUnitId;
               const isOccupiedByAlly = isValidMove && unit && unit.team === 'A' && unit.alive;
               let ghostUnit = null;
-              Object.entries(unitGhosts).forEach(([unitId, ghostPos]) => { if (ghostPos.r === r && ghostPos.c === c) ghostUnit = units.find((u) => u.id === unitId); });
+              if (!isAnimating) {
+                Object.entries(unitGhosts).forEach(([unitId, ghostPos]) => {
+                  if (ghostPos.r === r && ghostPos.c === c) {
+                    ghostUnit = units.find((u) => u.id === unitId);
+                  }
+                });
+              }
               const isFrontier = c === (board.middleColumn ?? board.colsPerSide);
 
               return (
@@ -136,9 +129,11 @@ export default function Escenario() {
                   key={`${r}-${c}`}
                   r={r}
                   c={c}
-                  unit={unit}
+                  unit={unitForRender}
                   cover={cover}
-                  ghost={ghostUnit ? ghostUnit.id : null}
+                  coverHp={coverHp}
+                  coverSide={coverSide}
+                  ghostUnit={ghostUnit}
                   isValidMove={isValidMove}
                   isOccupiedByAlly={isOccupiedByAlly}
                   isSelected={isSelected}
@@ -151,27 +146,25 @@ export default function Escenario() {
           )}
         </div>
         <AnimationLayer
-          board={board}
           frame={currentFrame}
           isAnimating={isAnimating}
+          units={units}
         />
+        {contextMenu && (
+          <ContextMenu
+            r={contextMenu.r}
+            c={contextMenu.c}
+            unit={contextMenu.unit}
+            selectedUnit={selectedUnit}
+            board={board}
+            plannedActions={plannedActions}
+            validMoves={validMoves}
+            ghostPosition={ghostPosition}
+            onAction={handleAction}
+            onClose={() => setContextMenu(null)}
+          />
+        )}
       </div>
-
-      {contextMenu && (
-        <ContextMenu
-          position={{ x: contextMenu.x, y: contextMenu.y }}
-          r={contextMenu.r}
-          c={contextMenu.c}
-          unit={contextMenu.unit}
-          selectedUnit={selectedUnit}
-          board={board}
-          plannedActions={plannedActions}
-          validMoves={validMoves}
-          ghostPosition={ghostPosition}
-          onAction={handleAction}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
     </div>
   );
 }

@@ -1,0 +1,151 @@
+.detail__back {
+  margin-bottom: calc(var(--vh-unit) * 16);
+}
+
+.detail__total {
+  margin-top: calc(var(--vh-unit) * 8);
+  font-weight: bold;
+  color: #ff0000;
+}
+
+.detail__price-line {
+  margin-top: calc(var(--vh-unit) * 8);
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.detail__desc {
+  margin-top: calc(var(--vh-unit) * 16);
+  color: #ffffff;
+}
+
+.shop__mode {
+  display: flex;
+  gap: calc(var(--vh-unit) * 16);
+  margin-bottom: calc(var(--vh-unit) * 16);
+  flex-wrap: wrap;
+}
+
+.sell__empty {
+  margin: calc(var(--vh-unit) * 16) 0;
+  text-align: center;
+}
+
+.sell__grid {
+  margin-top: calc(var(--vh-unit) * 16);
+}
+
+/* Cards tienda */
+.t2-card {
+  border: calc(var(--vh-unit) * 1) solid #ffffff;
+  background-color: #0b0b0b;
+  padding: calc(var(--vh-unit) * 16);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vh-unit) * 12);
+}
+
+.t2-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(var(--vh-unit) * 8);
+}
+
+.t2-card__media {
+  display: flex;
+  align-items: center;
+  height: calc(var(--vh-unit) * 40);
+}
+
+.item-sprite {
+  width: calc(var(--vh-unit) * 8);
+  height: calc(var(--vh-unit) * 8);
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  transform: scale(4);
+  transform-origin: top left;
+  display: block;
+}
+
+.item-sprite--weapon {
+  width: calc(var(--vh-unit) * 16);
+  height: calc(var(--vh-unit) * 8);
+  background-image: url("../../assets/imagenes/armas.png");
+  background-size: calc(var(--vh-unit) * 16) calc(var(--vh-unit) * 24);
+}
+
+.item-weapon-0 { background-position: 0 0; }
+.item-weapon-1 { background-position: 0 calc(var(--vh-unit) * -8); }
+.item-weapon-2 { background-position: 0 calc(var(--vh-unit) * -16); }
+
+.item-sprite--helmet {
+  background-image: url("../../assets/imagenes/mascaras.png");
+  background-size: calc(var(--vh-unit) * 8) calc(var(--vh-unit) * 24);
+}
+
+.item-helmet-0 { background-position: 0 0; }
+.item-helmet-1 { background-position: 0 calc(var(--vh-unit) * -8); }
+.item-helmet-2 { background-position: 0 calc(var(--vh-unit) * -16); }
+
+.item-sprite--armor {
+  background-image: url("../../assets/imagenes/armaduras.png");
+  background-size: calc(var(--vh-unit) * 8) calc(var(--vh-unit) * 40);
+}
+
+.item-armor-0 { background-position: 0 0; }
+.item-armor-1 { background-position: 0 calc(var(--vh-unit) * -8); }
+.item-armor-2 { background-position: 0 calc(var(--vh-unit) * -16); }
+.item-armor-3 { background-position: 0 calc(var(--vh-unit) * -24); }
+.item-armor-4 { background-position: 0 calc(var(--vh-unit) * -32); }
+
+.item-sprite--object {
+  background-image: url("../../assets/imagenes/objetos.png");
+  background-size: calc(var(--vh-unit) * 8) calc(var(--vh-unit) * 40);
+}
+
+.item-object-0 { background-position: 0 0; }
+.item-object-1 { background-position: 0 calc(var(--vh-unit) * -8); }
+.item-object-2 { background-position: 0 calc(var(--vh-unit) * -16); }
+.item-object-3 { background-position: 0 calc(var(--vh-unit) * -24); }
+.item-object-4 { background-position: 0 calc(var(--vh-unit) * -32); }
+
+.item-sprite--ammo {
+  background-image: url("../../assets/imagenes/ammo.png");
+  background-size: calc(var(--vh-unit) * 8) calc(var(--vh-unit) * 24);
+}
+
+.item-ammo-0 { background-position: 0 0; }
+.item-ammo-1 { background-position: 0 calc(var(--vh-unit) * -8); }
+.item-ammo-2 { background-position: 0 calc(var(--vh-unit) * -16); }
+
+.t2-tag {
+  border: calc(var(--vh-unit) * 1) solid #ff0000;
+  color: #ff0000;
+  padding: calc(var(--vh-unit) * 3.2) calc(var(--vh-unit) * 8);
+  text-transform: uppercase;
+  font-size: calc(var(--vh-unit) * 12);
+  letter-spacing: calc(var(--vh-unit) * 0.64);
+}
+
+.t2-title {
+  margin: 0;
+  font-size: calc(var(--vh-unit) * 17.6);
+}
+
+.t2-desc {
+  margin: 0;
+  color: #ffffff;
+}
+
+.t2-price {
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.t2-actions {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vh-unit) * 8);
+  margin-top: auto;
+}

@@ -1,4 +1,7 @@
-const DEFAULT_FRAME_DURATION = 1000;
+const MOVE_PHASE_MS = 1000;
+const SHOT_PHASE_MS = 1000;
+const HIT_PHASE_MS = 1000;
+const DEFAULT_FRAME_DURATION = MOVE_PHASE_MS + SHOT_PHASE_MS + HIT_PHASE_MS;
 
 const buildMovementPath = (from, to) => {
   const steps = [];
@@ -28,7 +31,7 @@ export const buildMoveEvent = ({
   name,
   from,
   to,
-  duration = DEFAULT_FRAME_DURATION,
+  duration = MOVE_PHASE_MS,
 }) => ({
   id,
   type: 'move',
@@ -46,8 +49,11 @@ export const buildShotEvent = ({
   name,
   from,
   to,
-  duration = DEFAULT_FRAME_DURATION,
+  duration = SHOT_PHASE_MS,
   result = 'hit',
+  projectile = 'bullet',
+  hitType = 'hp',
+  targetId = null,
 }) => ({
   id,
   type: 'shot',
@@ -58,6 +64,9 @@ export const buildShotEvent = ({
   to,
   duration,
   result,
+  projectile,
+  hitType,
+  targetId,
 });
 
 export const buildProjectile = ({ id, from, to }) => ({
@@ -66,4 +75,31 @@ export const buildProjectile = ({ id, from, to }) => ({
   to,
 });
 
-export { DEFAULT_FRAME_DURATION };
+export const buildObjectEvent = ({
+  id,
+  unitId,
+  team,
+  name,
+  objectId,
+  visual = 'hand',
+  objectKind = 'secondary',
+}) => ({
+  id,
+  type: 'object',
+  unitId,
+  team,
+  name,
+  objectId,
+  visual,
+  objectKind,
+});
+
+export const buildCoverEvent = ({ id, unitId, team, name }) => ({
+  id,
+  type: 'cover',
+  unitId,
+  team,
+  name,
+});
+
+export { DEFAULT_FRAME_DURATION, MOVE_PHASE_MS, SHOT_PHASE_MS, HIT_PHASE_MS };

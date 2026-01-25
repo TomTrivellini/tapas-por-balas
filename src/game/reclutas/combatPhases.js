@@ -1,5 +1,12 @@
 import { pickShotTarget } from '../state/battleRules';
-import { buildProjectile, buildShotEvent, getMissDestination } from './combatAnimations';
+import {
+  buildCoverEvent,
+  buildObjectEvent,
+  buildProjectile,
+  buildShotEvent,
+  getMissDestination,
+  SHOT_PHASE_MS,
+} from './combatAnimations';
 import { applyDamageWithArmor, damageCoverAt } from './combatDamage';
 import { pickAllShotTargets, pickCoverOnlyTarget } from './combatTargets';
 
@@ -27,7 +34,15 @@ export const resolveSupportActions = ({
     if (action.type === 'COVER') {
       if (board.cover?.[snapshot.r]?.[snapshot.c]) {
         applyUnitUpdates(unitId, { isCovered: true });
-        recordLog(`${snapshot.name} tomo cobertura ${suffix}`);
+        registerEvent(
+          buildCoverEvent({
+            id: `cover-${unitId}-${actionIndex}`,
+            unitId,
+            team: snapshot.team,
+            name: snapshot.name,
+          })
+        );
+        recordLog(`${snapshot.name} tomo cobertura ${suffix}`, snapshot.team);
       }
       return;
     }
@@ -35,7 +50,7 @@ export const resolveSupportActions = ({
       const unit = getUnits().find((u) => u.id === unitId);
       if (!unit || unit.ammo <= 0) return;
       applyUnitUpdates(unitId, { ammo: Math.max(0, unit.ammo - 1), loaded: true });
-      recordLog(`${snapshot.name} recargo ${suffix}`);
+      recordLog(`${snapshot.name} recargo ${suffix}`, snapshot.team);
       return;
     }
     if (action.type === 'USE_OBJECT') {
@@ -43,22 +58,39 @@ export const resolveSupportActions = ({
       if (!unit || !unit.objectItem || !itemsById) return;
       const objectEntry = itemsById.get(unit.objectItem);
       const healValue = objectEntry?.heal || 0;
-      const apBonusValue = objectEntry?.apBonusValue || 0;
+      const apBonusValue = objectEntry?.apBonus || 0;
       const apBonusRounds = objectEntry?.apBonusRounds || 0;
       const damageValue = objectEntry?.damage || 0;
       const immobilizeRounds = objectEntry?.immobilizeRounds || 0;
       const objectName = objectEntry?.name || 'objeto';
 
       if (apBonusValue > 0 && apBonusRounds > 0) {
+        const objectLabel = `${objectEntry?.id || ''} ${objectEntry?.name || ''}`.toLowerCase();
+        const isCig = /cig|cigarrillo|cigar|tabaco|smoke/.test(objectLabel);
         const currentBonus = unit.apBonusRounds || 0;
-        const currentValue = unit.apBonusValue || 0;
+        const currentValue = unit.apBonus || 0;
+        const currentSmoke = unit.smokeRounds || 0;
+        const nextSmokeRounds = isCig ? Math.max(currentSmoke, apBonusRounds) : currentSmoke;
         applyUnitUpdates(unitId, {
           objectItem: null,
           apBonusRounds: Math.max(currentBonus, apBonusRounds),
-          apBonusValue: Math.max(currentValue, apBonusValue),
+          apBonus: Math.max(currentValue, apBonusValue),
+          ...(isCig ? { smokeRounds: nextSmokeRounds } : {}),
         });
+        registerEvent(
+          buildObjectEvent({
+            id: `obj-use-${unitId}-${actionIndex}-buff`,
+            unitId,
+            team: snapshot.team,
+            name: snapshot.name,
+            objectId: objectEntry?.id || objectName,
+            visual: 'cig',
+            objectKind: 'mouth',
+          })
+        );
         recordLog(
-          `${snapshot.name} uso ${objectName} y gano +${apBonusValue} AP por ${apBonusRounds} rondas ${suffix}`
+          `${snapshot.name} uso ${objectName} y gano +${apBonusValue} AP por ${apBonusRounds} rondas ${suffix}`,
+          snapshot.team
         );
         return;
       }
@@ -93,6 +125,12 @@ export const resolveSupportActions = ({
                 to: { r: target.r, c: target.c },
               })
             );
+            const projectileType = objectEntry?.immobilizeRounds
+              ? 'net'
+              : /lanza|red/i.test(objectName || '')
+                ? 'net'
+                : 'bullet';
+            const hitType = damageResult.damageApplied ? 'hp' : 'shield';
             registerEvent(
               buildShotEvent({
                 id: `obj-shot-${unitId}-${actionIndex}-${target.id}`,
@@ -101,14 +139,28 @@ export const resolveSupportActions = ({
                 name: snapshot.name,
                 from: { r: snapshot.r, c: snapshot.c },
                 to: { r: target.r, c: target.c },
-                duration: frameDuration,
+                duration: SHOT_PHASE_MS,
                 result: 'hit',
+                projectile: projectileType,
+                hitType,
+                targetId: target.id,
+              })
+            );
+            registerEvent(
+              buildObjectEvent({
+                id: `obj-use-${unitId}-${actionIndex}-${target.id}`,
+                unitId,
+                team: snapshot.team,
+                name: snapshot.name,
+                objectId: objectEntry?.id || objectName,
+                visual: 'hand',
+                objectKind: 'secondary',
               })
             );
             const summary = damageResult.damageApplied
               ? `${snapshot.name} uso ${objectName} y golpeo a ${target.name}`
               : `${snapshot.name} uso ${objectName} sobre ${target.name}`;
-            recordLog(`${summary} ${suffix}`);
+            recordLog(`${summary} ${suffix}`, snapshot.team);
           });
         } else {
           const miss = getMissDestination(snapshot, board);
@@ -119,6 +171,11 @@ export const resolveSupportActions = ({
               to: miss,
             })
           );
+          const projectileType = objectEntry?.immobilizeRounds
+            ? 'net'
+            : /lanza|red/i.test(objectName || '')
+              ? 'net'
+              : 'bullet';
           registerEvent(
             buildShotEvent({
               id: `obj-shot-${unitId}-${actionIndex}`,
@@ -127,18 +184,42 @@ export const resolveSupportActions = ({
               name: snapshot.name,
               from: { r: snapshot.r, c: snapshot.c },
               to: miss,
-              duration: frameDuration,
+              duration: SHOT_PHASE_MS,
               result: 'miss',
+              projectile: projectileType,
+              targetId: null,
             })
           );
-          recordLog(`${snapshot.name} uso ${objectName} y fallo ${suffix}`);
+          registerEvent(
+            buildObjectEvent({
+              id: `obj-use-${unitId}-${actionIndex}-miss`,
+              unitId,
+              team: snapshot.team,
+              name: snapshot.name,
+              objectId: objectEntry?.id || objectName,
+              visual: 'hand',
+              objectKind: 'secondary',
+            })
+          );
+          recordLog(`${snapshot.name} uso ${objectName} y fallo ${suffix}`, snapshot.team);
         }
       } else {
         const maxHp = snapshot.maxHp && snapshot.maxHp > 0 ? snapshot.maxHp : null;
         const targetMax = maxHp !== null ? maxHp : snapshot.hp + healValue;
         const newHp = healValue > 0 ? Math.min(snapshot.hp + healValue, targetMax) : snapshot.hp;
         applyUnitUpdates(unitId, { hp: newHp, objectItem: null });
-        recordLog(`${snapshot.name} uso ${objectName} ${suffix}`);
+        registerEvent(
+          buildObjectEvent({
+            id: `obj-use-${unitId}-${actionIndex}-heal`,
+            unitId,
+            team: snapshot.team,
+            name: snapshot.name,
+            objectId: objectEntry?.id || objectName,
+            visual: 'face',
+            objectKind: 'consume',
+          })
+        );
+        recordLog(`${snapshot.name} uso ${objectName} ${suffix}`, snapshot.team);
       }
     }
   });
@@ -210,7 +291,8 @@ export const resolveShootActions = ({
             if (nextHp !== currentShooter.hp) {
               applyUnitUpdates(unitId, { hp: nextHp });
               recordLog(
-                `${snapshot.name} recupero ${onHitHeal} HP con ${vestEntry?.name || 'chupasangre'} ${suffix}`
+                `${snapshot.name} recupero ${onHitHeal} HP con ${vestEntry?.name || 'chupasangre'} ${suffix}`,
+                snapshot.team
               );
             }
           }
@@ -223,6 +305,7 @@ export const resolveShootActions = ({
             to: { r: target.r, c: target.c },
           })
         );
+        const hitType = damageResult.damageApplied ? 'hp' : 'shield';
         registerEvent(
           buildShotEvent({
             id: `shot-${unitId}-${actionIndex}-${target.id}`,
@@ -231,14 +314,16 @@ export const resolveShootActions = ({
             name: snapshot.name,
             from: { r: snapshot.r, c: snapshot.c },
             to: { r: target.r, c: target.c },
-            duration: frameDuration,
+            duration: SHOT_PHASE_MS,
             result: 'hit',
+            hitType,
+            targetId: target.id,
           })
         );
         const summary = damageResult.damageApplied
           ? `${snapshot.name} disparo a ${target.name} (-${damage} HP)`
           : `${snapshot.name} disparo a la cobertura de ${target.name}`;
-        recordLog(`${summary} ${suffix}`);
+        recordLog(`${summary} ${suffix}`, snapshot.team);
       });
     } else {
       const coverTarget = pickCoverOnlyTarget(snapshot.team, row, units);
@@ -251,7 +336,7 @@ export const resolveShootActions = ({
         );
         if (coverDamage.destroyed) {
           applyUnitUpdates(coverTarget.id, { isCovered: false });
-          recordLog(`La cobertura de ${coverTarget.name} fue destruida ${suffix}`);
+          recordLog(`La cobertura de ${coverTarget.name} fue destruida ${suffix}`, snapshot.team);
         }
         pushProjectile(
           buildProjectile({
@@ -268,11 +353,13 @@ export const resolveShootActions = ({
             name: snapshot.name,
             from: { r: snapshot.r, c: snapshot.c },
             to: { r: coverTarget.r, c: coverTarget.c },
-            duration: frameDuration,
+            duration: SHOT_PHASE_MS,
             result: coverDamage.destroyed ? 'coverDestroyed' : 'coverBlocked',
+            hitType: 'shield',
+            targetId: coverTarget.id,
           })
         );
-        recordLog(`${snapshot.name} disparo a la cobertura ${suffix}`);
+        recordLog(`${snapshot.name} disparo a la cobertura ${suffix}`, snapshot.team);
       } else {
         const miss = getMissDestination(snapshot, newBoard);
         pushProjectile(
@@ -290,11 +377,12 @@ export const resolveShootActions = ({
             name: snapshot.name,
             from: { r: snapshot.r, c: snapshot.c },
             to: miss,
-            duration: frameDuration,
+            duration: SHOT_PHASE_MS,
             result: 'miss',
+            targetId: null,
           })
         );
-        recordLog(`${snapshot.name} disparo y fallo ${suffix}`);
+        recordLog(`${snapshot.name} disparo y fallo ${suffix}`, snapshot.team);
       }
     }
 

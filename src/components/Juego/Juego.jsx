@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useBattle } from '../../game/state/BattleContext';
-import { BATTLE_ACTIONS } from '../../game/state/battleReducer';
+import { useBattle } from '../../game2/BattleContext';
+import { BATTLE_ACTIONS } from '../../game2/battleActions';
+import { DEFAULT_FRAME_DURATION } from '../../game/reclutas/combatAnimations';
 import { useTeam } from '../../context/TeamContext';
 import { useInventory } from '../../context/InventoryContext';
 import { useCart } from '../../context/CartContext';
-import { theme } from '../../game/state/theme';
+import { findAmmoIdForWeapon } from '../../data/catalogUtils';
 import LogPanel from './UI/LogPanel';
 import Escenario from './Escenario/Escenario';
 import Botonera from './UI/Botonera';
@@ -177,7 +178,10 @@ export default function Juego({ onBattleEnd }) {
           lootItems.push({ id: deadUnit.weapon, qty: 1 });
         }
         if (deadUnit.ammo > 0 && deadUnit.weapon) {
-          lootItems.push({ id: `amm-${deadUnit.weapon}`, qty: deadUnit.ammo });
+          const ammoId = findAmmoIdForWeapon(deadUnit.weapon, porId);
+          if (ammoId) {
+            lootItems.push({ id: ammoId, qty: deadUnit.ammo });
+          }
         }
         if (deadUnit.helmet) {
           lootItems.push({ id: deadUnit.helmet, qty: 1 });
@@ -277,134 +281,18 @@ export default function Juego({ onBattleEnd }) {
     if (!state.animationQueue || state.animationQueue.length === 0) return;
     const timer = setTimeout(() => {
       dispatch({ type: BATTLE_ACTIONS.ADVANCE_FRAME });
-    }, 1000);
+    }, DEFAULT_FRAME_DURATION);
     return () => clearTimeout(timer);
   }, [state.isAnimating, state.animationQueue ? state.animationQueue.length : 0, dispatch]);
 
-  const styles = {
-    container: {
-      backgroundColor: theme.colors.bg,
-      padding: '20px',
-      borderRadius: '8px',
-      color: theme.colors.text,
-    },
-    mainLayout: {
-      display: 'grid',
-      gridTemplateColumns: '260px 1fr 260px',
-      gap: '20px',
-      marginBottom: '20px',
-    },
-    centerColumn: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '15px',
-    },
-    sideColumn: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-    },
-    sideTitle: {
-      color: theme.colors.text,
-      fontSize: '12px',
-      textTransform: 'uppercase',
-      letterSpacing: '0.6px',
-      marginBottom: '4px',
-    },
-    cardList: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '10px',
-    },
-    emptyText: {
-      color: '#888',
-      fontSize: '12px',
-    },
-    button: (disabled = false) => ({
-      padding: '12px 20px',
-      backgroundColor: disabled ? '#1a1a1a' : '#1a3a1a',
-      border: `1px solid ${theme.colors.border}`,
-      color: disabled ? '#666' : '#0f0',
-      borderRadius: '4px',
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      fontSize: '13px',
-      fontWeight: 'bold',
-      opacity: disabled ? 0.5 : 1,
-      transition: 'all 0.2s',
-      width: '100%',
-    }),
-    gameOverModal: {
-      position: 'fixed',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      backgroundColor: theme.colors.panel,
-      padding: '30px',
-      borderRadius: '8px',
-      border: `2px solid ${theme.colors.border}`,
-      textAlign: 'center',
-      zIndex: 1000,
-      maxWidth: '400px',
-    },
-    gameOverOverlay: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.8)',
-      zIndex: 999,
-    },
-    gameOverTitle: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      marginBottom: '15px',
-      color: '#fff',
-    },
-    gameOverText: {
-      fontSize: '14px',
-      marginBottom: '8px',
-      color: '#ccc',
-    },
-    gameOverStat: {
-      fontSize: '14px',
-      marginBottom: '8px',
-      color: '#ccc',
-    },
-    gameOverList: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-      marginBottom: '20px',
-    },
-    gameOverListRow: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '8px',
-      justifyContent: 'center',
-    },
-    gameOverListLabel: {
-      fontSize: '12px',
-      textTransform: 'uppercase',
-      letterSpacing: '0.6px',
-      color: '#777',
-    },
-    fallenAlly: {
-      color: '#ffffff',
-    },
-    fallenEnemy: {
-      color: '#ff0000',
-    },
-  };
-
   return (
-    <div style={styles.container}>
-      <div style={styles.mainLayout}>
-        <div style={styles.sideColumn}>
-          <div style={styles.sideTitle}>Equipo</div>
-          <div style={styles.cardList}>
+    <div className="game">
+      <div className="game__layout">
+        <div className="game__side">
+          <div className="game__side-title">Equipo</div>
+          <div className="game__card-list">
             {alliedUnits.length === 0 ? (
-              <div style={styles.emptyText}>Sin aliados</div>
+              <div className="game__empty">Sin aliados</div>
             ) : (
               alliedUnits.map((unit) => (
                 <TeamCard key={unit.id} unit={unit} />
@@ -413,7 +301,7 @@ export default function Juego({ onBattleEnd }) {
           </div>
         </div>
 
-        <div style={styles.centerColumn}>
+        <div className="game__center">
           <Escenario />
 
           <Botonera
@@ -427,11 +315,11 @@ export default function Juego({ onBattleEnd }) {
           <LogPanel />
         </div>
 
-        <div style={styles.sideColumn}>
-          <div style={styles.sideTitle}>Enemigos</div>
-          <div style={styles.cardList}>
+        <div className="game__side">
+          <div className="game__side-title">Enemigos</div>
+          <div className="game__card-list">
             {enemyUnits.length === 0 ? (
-              <div style={styles.emptyText}>Sin enemigos</div>
+              <div className="game__empty">Sin enemigos</div>
             ) : (
               enemyUnits.map((unit) => (
                 <EnemyCard key={unit.id} unit={unit} />
@@ -443,41 +331,41 @@ export default function Juego({ onBattleEnd }) {
 
       {gameOver.active && (
         <>
-          <div style={styles.gameOverOverlay}></div>
-          <div style={styles.gameOverModal}>
-            <div style={styles.gameOverTitle}>
+          <div className="game__overlay"></div>
+          <div className="game__modal">
+            <div className="game__modal-title">
               Termino la batalla
             </div>
-            <div style={styles.gameOverText}>
+            <div className="game__modal-text">
               Recolectaste {battleStats.tapas} tapas.
             </div>
-            <div style={styles.gameOverStat}>
+            <div className="game__modal-stat">
               Murieron {totalFallen} {totalFallenText}.
             </div>
-            <div style={styles.gameOverList}>
+            <div className="game__modal-list">
               {totalFallen === 0 ? (
-                <div style={styles.gameOverText}>Sin fallecidos.</div>
+                <div className="game__modal-text">Sin fallecidos.</div>
               ) : (
                 <>
-                  <div style={styles.gameOverListLabel}>Aliados</div>
-                  <div style={styles.gameOverListRow}>
+                  <div className="game__modal-label">Aliados</div>
+                  <div className="game__modal-row">
                     {battleStats.fallenAllies.length === 0 ? (
-                      <span style={styles.gameOverText}>Ninguno</span>
+                      <span className="game__modal-text">Ninguno</span>
                     ) : (
                       battleStats.fallenAllies.map((unit) => (
-                        <span key={unit.id} style={styles.fallenAlly}>
+                        <span key={unit.id} className="game__fallen-ally">
                           {unit.name}
                         </span>
                       ))
                     )}
                   </div>
-                  <div style={styles.gameOverListLabel}>Enemigos</div>
-                  <div style={styles.gameOverListRow}>
+                  <div className="game__modal-label">Enemigos</div>
+                  <div className="game__modal-row">
                     {battleStats.fallenEnemies.length === 0 ? (
-                      <span style={styles.gameOverText}>Ninguno</span>
+                      <span className="game__modal-text">Ninguno</span>
                     ) : (
                       battleStats.fallenEnemies.map((unit) => (
-                        <span key={unit.id} style={styles.fallenEnemy}>
+                        <span key={unit.id} className="game__fallen-enemy">
                           {unit.name}
                         </span>
                       ))
@@ -487,7 +375,7 @@ export default function Juego({ onBattleEnd }) {
               )}
             </div>
             <button
-              style={styles.button()}
+              className="game__button"
               onClick={onBattleEnd}
             >
               Finalizar Batalla
